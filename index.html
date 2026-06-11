@@ -134,6 +134,24 @@
     box-shadow:0 1px 8px rgba(0,0,0,.5);
   }
 
+  /* ---- ARモード ---- */
+  #arView{ position:fixed; inset:0; z-index:2000; background:#000; }
+  #arVideo{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+  #arCanvas{ position:absolute; inset:0; width:100%; height:100%; }
+  #arExitBtn{
+    position:absolute; top:calc(env(safe-area-inset-top) + 12px);
+    left:50%; transform:translateX(-50%);
+    letter-spacing:.08em; font-weight:700;
+  }
+  .ar-status{
+    position:absolute; bottom:calc(env(safe-area-inset-bottom) + 14px);
+    left:50%; transform:translateX(-50%);
+    background:var(--panel); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
+    border:1px solid var(--hairline); border-radius:999px;
+    color:var(--text); font-size:12px; padding:9px 16px;
+    font-variant-numeric:tabular-nums; white-space:nowrap;
+  }
+
   .leaflet-control-attribution{ background:rgba(17,18,22,.6) !important; color:#777 !important; }
   .leaflet-control-attribution a{ color:#999 !important; }
 
@@ -156,6 +174,7 @@
     <button class="pill" id="searchBtn">検索</button>
     <button class="pill" id="layerBtn">地図</button>
     <button class="pill" id="locateBtn">現在地</button>
+    <button class="pill" id="arBtn">AR</button>
   </div>
 </header>
 
@@ -191,6 +210,13 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div id="arView" hidden>
+  <video id="arVideo" playsinline autoplay muted></video>
+  <canvas id="arCanvas"></canvas>
+  <button class="pill" id="arExitBtn">MAP</button>
+  <div class="ar-status" id="arStatus">コンパス待機中…</div>
+</div>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
@@ -453,6 +479,202 @@
         searchResults.innerHTML = '<div class="result sub">検索に失敗しました（ネット接続を確認）</div>';
       });
   }
+
+  // ---------- ARモード ----------
+  // カメラ映像に太陽の位置・軌跡を重畳表示する。
+  // 方位: iOSは webkitCompassHeading、Androidは deviceorientationabsolute の alpha を使用。
+  // 縦持ち（ポートレート）前提の近似投影。コンパス精度の都合で数度のずれは許容。
+  var arView = document.getElementById('arView');
+  var arVideo = document.getElementById('arVideo');
+  var arCanvas = document.getElementById('arCanvas');
+  var arStatus = document.getElementById('arStatus');
+  var arCtx = arCanvas.getContext('2d');
+  var arStream = null, arActive = false, hasAbsolute = false;
+  var orient = { heading: null, pitch: null };
+  var AR_VFOV = 65; // スマホカメラの縦視野角の仮定値 [deg]
+
+  function lowpassAngle(prev, next, k){
+    if (prev === null) return next;
+    var d = ((next - prev + 540) % 360) - 180;
+    return (prev + d * k + 360) % 360;
+  }
+
+  function onOrient(e){
+    if (e.type === 'deviceorientationabsolute') hasAbsolute = true;
+    var heading = null;
+    if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)){
+      heading = e.webkitCompassHeading;                    // iOS
+    } else if (e.alpha != null && (e.absolute || e.type === 'deviceorientationabsolute')){
+      heading = (360 - e.alpha) % 360;                     // Android（絶対方位）
+    } else if (hasAbsolute){
+      return; // 絶対方位が取れる端末では相対イベントを無視
+    }
+    if (heading !== null) orient.heading = lowpassAngle(orient.heading, heading, 0.25);
+    if (e.beta != null){
+      var pitch = e.beta - 90;  // 端末が垂直＝カメラ水平 を 0° とする
+      orient.pitch = (orient.pitch === null) ? pitch : orient.pitch + (pitch - orient.pitch) * 0.25;
+    }
+  }
+
+  function resizeAR(){
+    var dpr = window.devicePixelRatio || 1;
+    arCanvas.width = arView.clientWidth * dpr;
+    arCanvas.height = arView.clientHeight * dpr;
+    arCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function roundedRect(x, y, w, h, r){
+    arCtx.beginPath();
+    arCtx.moveTo(x + r, y);
+    arCtx.arcTo(x + w, y, x + w, y + h, r);
+    arCtx.arcTo(x + w, y + h, x, y + h, r);
+    arCtx.arcTo(x, y + h, x, y, r);
+    arCtx.arcTo(x, y, x + w, y, r);
+    arCtx.closePath();
+  }
+
+  function arLabel(x, y, text, accent){
+    arCtx.font = '600 12px -apple-system, "Noto Sans JP", sans-serif';
+    var tw = arCtx.measureText(text).width;
+    roundedRect(x - tw/2 - 8, y - 30, tw + 16, 21, 10);
+    arCtx.fillStyle = 'rgba(17,18,22,.78)';
+    arCtx.fill();
+    arCtx.fillStyle = accent || '#F4F5F7';
+    arCtx.textAlign = 'center';
+    arCtx.textBaseline = 'middle';
+    arCtx.fillText(text, x, y - 19);
+  }
+
+  function drawAR(){
+    var w = arView.clientWidth, h = arView.clientHeight;
+    arCtx.clearRect(0, 0, w, h);
+
+    if (orient.heading === null){
+      arStatus.textContent = 'コンパス待機中…（端末を8の字に動かすと改善します）';
+      return;
+    }
+    var vfov = AR_VFOV, hfov = vfov * (w / h);
+    var pitch = (orient.pitch === null) ? 0 : orient.pitch;
+
+    function project(az, alt){
+      var dAz = ((az - orient.heading + 540) % 360) - 180;
+      var dAlt = alt - pitch;
+      return {
+        x: w/2 + dAz / hfov * w,
+        y: h/2 - dAlt / vfov * h,
+        on: Math.abs(dAz) < hfov * 0.8 && Math.abs(dAlt) < vfov * 0.8
+      };
+    }
+
+    // 選択日の軌跡線（5分刻み）
+    arCtx.beginPath();
+    var pen = false;
+    for (var m = 0; m < 1440; m += 5){
+      var d = new Date(state.date); d.setHours(0, m, 0, 0);
+      var s = sunAt(d);
+      if (s.altitude <= -1){ pen = false; continue; }
+      var p = project(s.azimuth, s.altitude);
+      if (!p.on){ pen = false; continue; }
+      if (pen) arCtx.lineTo(p.x, p.y); else { arCtx.moveTo(p.x, p.y); pen = true; }
+    }
+    arCtx.strokeStyle = 'rgba(255,176,32,.7)';
+    arCtx.lineWidth = 2;
+    arCtx.stroke();
+
+    // 30分刻みの時刻マーカー
+    for (var mm = 0; mm < 1440; mm += 30){
+      var md = new Date(state.date); md.setHours(0, mm, 0, 0);
+      var ms = sunAt(md);
+      if (ms.altitude <= 0) continue;
+      var mp = project(ms.azimuth, ms.altitude);
+      if (!mp.on) continue;
+      arCtx.beginPath();
+      arCtx.arc(mp.x, mp.y, 5.5, 0, Math.PI * 2);
+      arCtx.fillStyle = '#FFB020';
+      arCtx.fill();
+      arCtx.lineWidth = 1.5;
+      arCtx.strokeStyle = 'rgba(255,255,255,.9)';
+      arCtx.stroke();
+      arLabel(mp.x, mp.y, ('0'+md.getHours()).slice(-2) + ':' + ('0'+md.getMinutes()).slice(-2));
+    }
+
+    // 現在の太陽（実際の今）
+    var now = new Date();
+    var ns = sunAt(now);
+    if (ns.altitude > -1){
+      var np = project(ns.azimuth, ns.altitude);
+      if (np.on){
+        var g = arCtx.createRadialGradient(np.x, np.y, 2, np.x, np.y, 30);
+        g.addColorStop(0, 'rgba(74,222,128,.65)');
+        g.addColorStop(1, 'rgba(74,222,128,0)');
+        arCtx.fillStyle = g;
+        arCtx.beginPath(); arCtx.arc(np.x, np.y, 30, 0, Math.PI * 2); arCtx.fill();
+        arCtx.beginPath(); arCtx.arc(np.x, np.y, 9, 0, Math.PI * 2);
+        arCtx.fillStyle = '#4ADE80'; arCtx.fill();
+        arCtx.lineWidth = 2.5; arCtx.strokeStyle = '#fff'; arCtx.stroke();
+        arLabel(np.x, np.y - 14, '現在 ' + fmtTime(now), '#4ADE80');
+      }
+    }
+
+    arStatus.textContent =
+      (state.date.getMonth()+1) + '/' + state.date.getDate() +
+      ' ・ 方位 ' + Math.round(orient.heading) + '° ・ 仰角 ' + Math.round(pitch) + '°';
+  }
+
+  function arLoop(){
+    if (!arActive) return;
+    drawAR();
+    requestAnimationFrame(arLoop);
+  }
+
+  function enterAR(){
+    var orientReady;
+    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      // iOS 13+: ユーザー操作内での明示許可が必須
+      orientReady = DeviceOrientationEvent.requestPermission().then(function(r){
+        if (r !== 'granted') throw new Error('orientation-denied');
+      });
+    } else {
+      orientReady = Promise.resolve();
+    }
+    orientReady.then(function(){
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) throw new Error('no-camera');
+      return navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    }).then(function(stream){
+      arStream = stream;
+      arVideo.srcObject = stream;
+      arVideo.play().catch(function(){});
+      arView.hidden = false;
+      arActive = true;
+      orient.heading = null; orient.pitch = null; hasAbsolute = false;
+      window.addEventListener('deviceorientationabsolute', onOrient);
+      window.addEventListener('deviceorientation', onOrient);
+      resizeAR();
+      requestAnimationFrame(arLoop);
+    }).catch(function(err){
+      var msg = 'カメラを起動できませんでした';
+      if (err && err.message === 'orientation-denied') msg = '方位センサーの利用が許可されませんでした';
+      else if (err && err.message === 'no-camera') msg = 'この端末ではカメラを利用できません';
+      else if (err && (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError')) msg = 'カメラの利用が許可されませんでした';
+      toast(msg);
+    });
+  }
+
+  function exitAR(){
+    arActive = false;
+    arView.hidden = true;
+    window.removeEventListener('deviceorientationabsolute', onOrient);
+    window.removeEventListener('deviceorientation', onOrient);
+    if (arStream){
+      arStream.getTracks().forEach(function(t){ t.stop(); });
+      arStream = null;
+    }
+    arVideo.srcObject = null;
+  }
+
+  document.getElementById('arBtn').addEventListener('click', enterAR);
+  document.getElementById('arExitBtn').addEventListener('click', exitAR);
+  window.addEventListener('resize', function(){ if (arActive) resizeAR(); });
 
   // ---------- 起動 ----------
   setDate(new Date());
