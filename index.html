@@ -102,15 +102,19 @@
     background:transparent; color:var(--text); font-size:16px; cursor:pointer; line-height:1;
   }
   input[type="date"]{
-    /* iOS Safariの日付入力は固有幅で縮まないことがあるため width:0+flex で強制的に収める */
+    /* iOS Safariの日付入力はUA固有の最小幅で縮まないため、専用行を与えた上で外観もリセットする */
+    -webkit-appearance:none; appearance:none;
     flex:1 1 0px; width:0; min-width:0; background:transparent; border:1px solid var(--hairline);
+    text-align:center;
     border-radius:10px; color:var(--text); font:inherit; font-size:13px;
     padding:8px 10px; font-variant-numeric:tabular-nums;
   }
   .today-btn{
     border:none; background:rgba(255,255,255,.08); color:var(--text);
-    border-radius:10px; font-size:12px; padding:9px 12px; cursor:pointer;
+    border-radius:999px; font-size:12px; padding:9px 13px; cursor:pointer;
+    margin-left:auto; flex-shrink:0;  /* トグル行の右端に配置 */
   }
+  .sheet{ overflow:hidden; }  /* 万一のはみ出しは角丸内でクリップ */
 
   .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
   .stats.cols2{ grid-template-columns:repeat(2,1fr); }
@@ -203,6 +207,7 @@
     <button class="chip" data-k="today"  style="--c:var(--amber)"><i></i>今日</button>
     <button class="chip" data-k="summer" style="--c:var(--red)"><i></i>夏至</button>
     <button class="chip" data-k="winter" style="--c:var(--blue)"><i></i>冬至</button>
+    <button class="today-btn" id="todayBtn">今日へ</button>
   </div>
   <div class="row daterow">
     <div class="stepper">
@@ -210,7 +215,6 @@
       <input type="date" id="dateInput">
       <button class="step-btn" id="nextDay">›</button>
     </div>
-    <button class="today-btn" id="todayBtn">今日へ</button>
   </div>
   <div class="row stats">
     <div class="stat"><span class="lbl">日の出</span><span class="val" id="vSunrise">–</span></div>
