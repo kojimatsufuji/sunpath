@@ -102,7 +102,8 @@
     background:transparent; color:var(--text); font-size:16px; cursor:pointer; line-height:1;
   }
   input[type="date"]{
-    flex:1; min-width:0; background:transparent; border:1px solid var(--hairline);
+    /* iOS Safariの日付入力は固有幅で縮まないことがあるため width:0+flex で強制的に収める */
+    flex:1 1 0px; width:0; min-width:0; background:transparent; border:1px solid var(--hairline);
     border-radius:10px; color:var(--text); font:inherit; font-size:13px;
     padding:8px 10px; font-variant-numeric:tabular-nums;
   }
@@ -732,6 +733,28 @@
   document.getElementById('arBtn').addEventListener('click', enterAR);
   document.getElementById('arExitBtn').addEventListener('click', exitAR);
   window.addEventListener('resize', function(){ if (arActive) resizeAR(); });
+
+  // ---------- 下部UIの位置補正（iOS Safariのツールバー対策） ----------
+  // CSSのlvh/svh計算では持ち上げ量が不足する端末があるため、
+  // visualViewportで「実際に見えている領域の下端」を測ってその上に配置する。
+  var sheetEl = document.querySelector('.sheet');
+  function fitBottomUI(){
+    var vv = window.visualViewport;
+    if (!vv) return;
+    var visBottom = vv.offsetTop + vv.height; // レイアウトビューポート座標系での可視領域下端
+    sheetEl.style.bottom = 'auto';
+    sheetEl.style.top = Math.round(visBottom - sheetEl.offsetHeight - 12) + 'px';
+    arStatus.style.bottom = 'auto';
+    arStatus.style.top = Math.round(visBottom - arStatus.offsetHeight - 14) + 'px';
+  }
+  if (window.visualViewport){
+    window.visualViewport.addEventListener('resize', fitBottomUI);
+    window.visualViewport.addEventListener('scroll', fitBottomUI);
+    window.addEventListener('orientationchange', function(){ setTimeout(fitBottomUI, 300); });
+    fitBottomUI();
+    setTimeout(fitBottomUI, 300);  // フォント読み込み等でパネル高さが確定した後にもう一度
+    setTimeout(fitBottomUI, 1200);
+  }
 
   // ---------- 起動 ----------
   setDate(new Date());
