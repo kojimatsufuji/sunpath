@@ -74,6 +74,9 @@
   .sheet{
     position:fixed; left:12px; right:12px;
     bottom: calc(env(safe-area-inset-bottom) + 12px);
+    /* iOS Safariはfixed要素を大ビューポート基準で配置するため、
+       ツールバー表示中は (100lvh - 100svh) 分だけ持ち上げて常に見える位置に置く */
+    bottom: calc(100lvh - 100svh + env(safe-area-inset-bottom) + 12px);
     z-index:1000; max-width:520px; margin:0 auto;
     background:var(--panel); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
     border:1px solid var(--hairline); border-radius:20px;
@@ -145,6 +148,7 @@
   }
   .ar-status{
     position:absolute; bottom:calc(env(safe-area-inset-bottom) + 14px);
+    bottom: calc(100lvh - 100svh + env(safe-area-inset-bottom) + 14px);
     left:50%; transform:translateX(-50%);
     background:var(--panel); backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px);
     border:1px solid var(--hairline); border-radius:999px;
@@ -163,6 +167,16 @@
     opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap;
   }
   .toast.show{ opacity:1; }
+
+  /* ---- 狭い画面（スマホ縦持ち）の調整 ---- */
+  @media (max-width: 520px){
+    .topbar{ padding-left:10px; padding-right:10px; }
+    .top-actions{ gap:6px; }
+    .pill{ padding:10px 12px; font-size:12px; }
+    .brand{ display:none; }  /* ボタン4つを優先しロゴは非表示 */
+    .sheet{ padding:12px 14px; }
+    .row + .row{ margin-top:10px; }
+  }
 </style>
 </head>
 <body>
@@ -493,6 +507,9 @@
   var arStream = null, arActive = false, hasAbsolute = false;
   var orient = { heading: null, pitch: null };
   var yawOffset = null; // 相対ヨー→真方位の補正量。コンパスからゆっくり推定する
+  var compassPrev = null;  // 直前のコンパスサンプル {v, t}（スパイク検出用）
+  var yawLockTime = 0;     // 初回基準が取れた時刻
+  var arStartTime = 0;     // ARモード開始時刻
   var AR_VFOV = 65; // スマホカメラの縦視野角の仮定値 [deg]
 
   function lowpassAngle(prev, next, k){
@@ -522,11 +539,30 @@
     var isAbs = (e.absolute === true || e.type === 'deviceorientationabsolute');
     if (isAbs){
       yawOffset = 0; // Android: alphaが真方位基準なので補正不要
-    } else if (isCompass && Math.abs(alt) < 50){
-      // iOS: コンパスとの差分を低速で追従。カメラが上を向いている間は
-      // コンパス値が不安定なので基準更新に使わない（→跳びの伝播を防ぐ）
-      var target = ((e.webkitCompassHeading - azRel) % 360 + 360) % 360;
-      yawOffset = (yawOffset === null) ? target : lowpassAngle(yawOffset, target, 0.04);
+    } else if (isCompass && Math.abs(alt) < 45){
+      // iOS: コンパスは「北の基準」の推定だけに使う。
+      // センサーイベントは毎秒50〜60回発火するため、イベント単位の固定係数では実質追従が
+      // 速すぎてコンパスの乱れが画面に出る（屋内の磁気で数十度揺れる）。
+      // → 時間基準の時定数で超低速に補正し、精度の悪いサンプル・スパイクは捨てる。
+      var tNow = performance.now();
+      var ch = e.webkitCompassHeading;
+      var acc = (typeof e.webkitCompassAccuracy === 'number') ? e.webkitCompassAccuracy : -1;
+      var accOk = (acc >= 0 && acc <= 25);
+      var spike = compassPrev !== null &&
+                  Math.abs(((ch - compassPrev.v + 540) % 360) - 180) > 6;
+      if (!spike && (accOk || (yawOffset === null && tNow - arStartTime > 3000))){
+        // ↑精度情報が取れない端末でも、3秒待っても基準が無ければ初回だけ採用する
+        var target = ((ch - azRel) % 360 + 360) % 360;
+        if (yawOffset === null){
+          yawOffset = target;
+          yawLockTime = tNow;
+        } else {
+          var dt = compassPrev ? Math.min(200, tNow - compassPrev.t) / 1000 : 0.02;
+          var tau = (tNow - yawLockTime < 3000) ? 0.7 : 15; // 開始3秒は速く収束、以後は時定数15秒
+          yawOffset = lowpassAngle(yawOffset, target, 1 - Math.exp(-dt / tau));
+        }
+      }
+      compassPrev = { v: ch, t: tNow };
     }
     if (yawOffset === null) return; // まだ北の基準が取れていない
 
@@ -666,7 +702,8 @@
       arVideo.play().catch(function(){});
       arView.hidden = false;
       arActive = true;
-      orient.heading = null; orient.pitch = null; hasAbsolute = false; yawOffset = null;
+      orient.heading = null; orient.pitch = null; hasAbsolute = false;
+      yawOffset = null; compassPrev = null; yawLockTime = 0; arStartTime = performance.now();
       window.addEventListener('deviceorientationabsolute', onOrient);
       window.addEventListener('deviceorientation', onOrient);
       resizeAR();
