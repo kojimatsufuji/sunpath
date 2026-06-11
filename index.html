@@ -1,0 +1,469 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>SunPath — 太陽の軌跡</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0b0c0f">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  :root{
+    --panel: rgba(17,18,22,.82);
+    --hairline: rgba(255,255,255,.08);
+    --text: #F4F5F7;
+    --sub: #9AA0AA;
+    --amber: #FFB020;
+    --orange: #FF7A1A;
+    --red: #FF6B6B;
+    --blue: #4DA3FF;
+    --green: #4ADE80;
+  }
+  *{ box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body{ margin:0; height:100%; overflow:hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Helvetica Neue", "Noto Sans JP", sans-serif; }
+  #map{ position:fixed; inset:0; background:#0b0c0f; }
+
+  /* ---- 上部バー ---- */
+  .topbar{
+    position:fixed; top:0; left:0; right:0; z-index:1000;
+    display:flex; justify-content:space-between; align-items:center;
+    padding: calc(env(safe-area-inset-top) + 12px) 14px 0;
+    pointer-events:none;
+  }
+  .topbar > *{ pointer-events:auto; }
+  .pill{
+    background:var(--panel); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    border:1px solid var(--hairline); border-radius:999px;
+    color:var(--text); font-size:13px; line-height:1;
+    padding:11px 16px; cursor:pointer; user-select:none;
+  }
+  .brand{ font-weight:700; letter-spacing:.1em; font-size:13px; }
+  .top-actions{ display:flex; gap:8px; }
+  button.pill:active{ background:rgba(40,42,50,.9); }
+
+  /* ---- 検索ボックス ---- */
+  .searchbox{
+    position:fixed; top:calc(env(safe-area-inset-top) + 58px);
+    left:50%; transform:translateX(-50%);
+    width:min(92vw, 420px); z-index:1001;
+    background:var(--panel); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    border:1px solid var(--hairline); border-radius:16px;
+    padding:10px; color-scheme:dark;
+  }
+  .searchbox input{
+    width:100%; background:rgba(255,255,255,.06); border:1px solid var(--hairline);
+    border-radius:10px; color:var(--text); font:inherit; font-size:14px;
+    padding:10px 12px; outline:none;
+  }
+  .search-results{ max-height:40vh; overflow-y:auto; }
+  .result{
+    color:var(--text); font-size:12.5px; line-height:1.5;
+    padding:10px 8px; border-top:1px solid var(--hairline);
+    margin-top:8px; cursor:pointer; border-radius:8px;
+  }
+  .result:first-child{ border-top:none; }
+  .result:active{ background:rgba(255,255,255,.07); }
+  .result.sub{ color:var(--sub); cursor:default; }
+
+  /* ---- 下部ガラスパネル ---- */
+  .sheet{
+    position:fixed; left:12px; right:12px;
+    bottom: calc(env(safe-area-inset-bottom) + 12px);
+    z-index:1000; max-width:520px; margin:0 auto;
+    background:var(--panel); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
+    border:1px solid var(--hairline); border-radius:20px;
+    padding:14px 16px; color:var(--text);
+    color-scheme: dark;
+  }
+  .row{ display:flex; align-items:center; gap:8px; }
+  .row + .row{ margin-top:12px; }
+
+  .chip{
+    display:inline-flex; align-items:center; gap:7px;
+    background:transparent; border:1px solid var(--hairline); border-radius:999px;
+    color:var(--sub); font-size:12px; padding:8px 13px; cursor:pointer;
+  }
+  .chip i{ width:8px; height:8px; border-radius:50%; background:var(--c); opacity:.35; }
+  .chip.on{ color:var(--text); border-color:rgba(255,255,255,.22); background:rgba(255,255,255,.06); }
+  .chip.on i{ opacity:1; }
+
+  .daterow{ justify-content:space-between; }
+  .stepper{ display:flex; gap:6px; align-items:center; flex:1; }
+  .step-btn{
+    width:34px; height:34px; border-radius:10px; border:1px solid var(--hairline);
+    background:transparent; color:var(--text); font-size:16px; cursor:pointer; line-height:1;
+  }
+  input[type="date"]{
+    flex:1; min-width:0; background:transparent; border:1px solid var(--hairline);
+    border-radius:10px; color:var(--text); font:inherit; font-size:13px;
+    padding:8px 10px; font-variant-numeric:tabular-nums;
+  }
+  .today-btn{
+    border:none; background:rgba(255,255,255,.08); color:var(--text);
+    border-radius:10px; font-size:12px; padding:9px 12px; cursor:pointer;
+  }
+
+  .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
+  .stats.cols2{ grid-template-columns:repeat(2,1fr); }
+  .stat .lbl{ display:block; font-size:10px; color:var(--sub); letter-spacing:.06em; margin-bottom:3px; }
+  .stat .val{ display:block; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
+  .stat .val small{ font-size:10px; font-weight:400; color:var(--sub); }
+
+  /* ---- 地図上のマーカー ---- */
+  .hour-dot{
+    width:24px; height:24px; border-radius:50%;
+    background:var(--amber); color:#231a05;
+    font-size:11px; font-weight:700;
+    display:flex; align-items:center; justify-content:center;
+    border:1.5px solid rgba(255,255,255,.9);
+    box-shadow:0 1px 6px rgba(0,0,0,.5);
+  }
+  .now-dot{
+    width:15px; height:15px; border-radius:50%;
+    background:var(--green); border:2.5px solid #fff;
+    box-shadow:0 1px 6px rgba(0,0,0,.5);
+  }
+  .obs-dot{
+    width:16px; height:16px; border-radius:50%;
+    background:#fff; border:3px solid rgba(17,18,22,.65);
+    box-shadow:0 1px 8px rgba(0,0,0,.5);
+  }
+
+  .leaflet-control-attribution{ background:rgba(17,18,22,.6) !important; color:#777 !important; }
+  .leaflet-control-attribution a{ color:#999 !important; }
+
+  .toast{
+    position:fixed; top:calc(env(safe-area-inset-top) + 64px); left:50%; transform:translateX(-50%);
+    z-index:1100; background:var(--panel); backdrop-filter:blur(16px);
+    border:1px solid var(--hairline); border-radius:999px;
+    color:var(--text); font-size:12px; padding:9px 16px;
+    opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap;
+  }
+  .toast.show{ opacity:1; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+
+<header class="topbar">
+  <div class="pill brand">SUNPATH</div>
+  <div class="top-actions">
+    <button class="pill" id="searchBtn">検索</button>
+    <button class="pill" id="layerBtn">地図</button>
+    <button class="pill" id="locateBtn">現在地</button>
+  </div>
+</header>
+
+<div class="searchbox" id="searchBox" hidden>
+  <input type="search" id="searchInput" placeholder="地名・住所で検索（Enterで実行）" enterkeyhint="search">
+  <div class="search-results" id="searchResults"></div>
+</div>
+
+<div class="sheet">
+  <div class="row">
+    <button class="chip" data-k="today"  style="--c:var(--amber)"><i></i>今日</button>
+    <button class="chip" data-k="summer" style="--c:var(--red)"><i></i>夏至</button>
+    <button class="chip" data-k="winter" style="--c:var(--blue)"><i></i>冬至</button>
+  </div>
+  <div class="row daterow">
+    <div class="stepper">
+      <button class="step-btn" id="prevDay">‹</button>
+      <input type="date" id="dateInput">
+      <button class="step-btn" id="nextDay">›</button>
+    </div>
+    <button class="today-btn" id="todayBtn">今日へ</button>
+  </div>
+  <div class="row stats">
+    <div class="stat"><span class="lbl">日の出</span><span class="val" id="vSunrise">–</span></div>
+    <div class="stat"><span class="lbl">南中</span><span class="val" id="vNoon">–</span></div>
+    <div class="stat"><span class="lbl">日の入</span><span class="val" id="vSunset">–</span></div>
+    <div class="stat"><span class="lbl">現在の太陽</span><span class="val" id="vNow">–</span></div>
+  </div>
+  <div class="row stats cols2">
+    <div class="stat"><span class="lbl">マジックアワー 朝</span><span class="val" id="vGHam">–</span></div>
+    <div class="stat"><span class="lbl">マジックアワー 夕</span><span class="val" id="vGHpm">–</span></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  // ---------- 保存された設定の読み込み ----------
+  var saved = {};
+  try { saved = JSON.parse(localStorage.getItem('sunpath') || '{}'); } catch(e){}
+
+  // ---------- 状態 ----------
+  var state = {
+    obs: saved.obs || { lat: 35.6812, lng: 139.7671 },  // 初期値: 東京駅
+    date: new Date(),
+    show: saved.show || { today: true, summer: false, winter: false },
+    satellite: (saved.satellite !== undefined) ? saved.satellite : true
+  };
+  var RADIUS = 450; // 軌跡の基準半径 [m]
+
+  function save(){
+    try {
+      localStorage.setItem('sunpath', JSON.stringify({
+        obs: state.obs, show: state.show, satellite: state.satellite, zoom: map.getZoom()
+      }));
+    } catch(e){}
+  }
+
+  // ---------- 地図 ----------
+  var map = L.map('map', { zoomControl: false })
+    .setView([state.obs.lat, state.obs.lng], saved.zoom || 16);
+  var satLayer = L.tileLayer(
+    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    { maxZoom: 19, attribution: 'Tiles © Esri' });
+  var osmLayer = L.tileLayer(
+    'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+    { maxZoom: 19, attribution: '© OpenStreetMap contributors' });
+  (state.satellite ? satLayer : osmLayer).addTo(map);
+  map.on('zoomend', save);
+
+  var groups = {
+    summer: L.layerGroup().addTo(map),
+    winter: L.layerGroup().addTo(map),
+    today:  L.layerGroup().addTo(map),
+    now:    L.layerGroup().addTo(map)
+  };
+
+  // 観測点マーカー（ドラッグで移動）
+  var obsMarker = L.marker([state.obs.lat, state.obs.lng], {
+    draggable: true,
+    icon: L.divIcon({ className:'', html:'<div class="obs-dot"></div>', iconSize:[16,16], iconAnchor:[8,8] })
+  }).addTo(map);
+  obsMarker.on('dragend', function(){
+    var p = obsMarker.getLatLng();
+    setObserver(p.lat, p.lng, false);
+  });
+  map.on('click', function(e){ setObserver(e.latlng.lat, e.latlng.lng, false); });
+
+  // ---------- 太陽計算ユーティリティ ----------
+  function sunAt(d){
+    var p = SunCalc.getPosition(d, state.obs.lat, state.obs.lng);
+    return {
+      azimuth: p.azimuth * 180 / Math.PI + 180,   // 北=0°の方位角に変換
+      altitude: p.altitude * 180 / Math.PI
+    };
+  }
+  function dest(bearing, dist){
+    var R = 6378137, br = bearing * Math.PI / 180;
+    var dLat = dist * Math.cos(br) / R;
+    var dLng = dist * Math.sin(br) / (R * Math.cos(state.obs.lat * Math.PI / 180));
+    return [state.obs.lat + dLat * 180 / Math.PI, state.obs.lng + dLng * 180 / Math.PI];
+  }
+  // 高度が低いほど遠くに置く（地平線=RADIUS、天頂=RADIUS*0.18）
+  function sunLatLng(s){
+    var r = RADIUS * Math.max(0.18, (90 - s.altitude) / 90);
+    return dest(s.azimuth, r);
+  }
+  function fmtTime(d){
+    if (!d || isNaN(d.getTime())) return '–';
+    return ('0'+d.getHours()).slice(-2) + ':' + ('0'+d.getMinutes()).slice(-2);
+  }
+  function fmtRange(a, b){
+    if (!a || !b || isNaN(a.getTime()) || isNaN(b.getTime())) return '–';
+    return fmtTime(a) + '–' + fmtTime(b);
+  }
+  function dateAtNoon(d){
+    var x = new Date(d); x.setHours(12,0,0,0); return x;
+  }
+  function solsticeDate(kind){
+    // 固定近似（実際の至点と±1日ずれる年あり。ロケハン用途では許容）
+    var y = state.date.getFullYear();
+    return kind === 'summer' ? new Date(y, 5, 21) : new Date(y, 11, 21);
+  }
+
+  // ---------- 軌跡の描画 ----------
+  function drawPath(baseDate, group, color, withHourMarkers){
+    group.clearLayers();
+    var pts = [];
+    for (var m = 0; m < 1440; m += 5){
+      var d = new Date(baseDate); d.setHours(0, m, 0, 0);
+      var s = sunAt(d);
+      if (s.altitude > -0.6) pts.push(sunLatLng(s));
+    }
+    if (pts.length < 2) return; // 太陽が昇らない日
+    L.polyline(pts, { color: color, weight: withHourMarkers ? 2.5 : 2,
+                      opacity: withHourMarkers ? 0.95 : 0.7,
+                      dashArray: withHourMarkers ? null : '5 6' }).addTo(group);
+    if (!withHourMarkers) return;
+    for (var h = 0; h < 24; h++){
+      var hd = new Date(baseDate); hd.setHours(h, 0, 0, 0);
+      var hs = sunAt(hd);
+      if (hs.altitude <= 0) continue;
+      L.marker(sunLatLng(hs), {
+        interactive: false,
+        icon: L.divIcon({ className:'', html:'<div class="hour-dot">'+h+'</div>', iconSize:[24,24], iconAnchor:[12,12] })
+      }).addTo(group);
+    }
+  }
+
+  // 現在の太陽（方位線＋緑マーカー）— 選択日に関係なく「実際の今」を表示
+  function drawNow(){
+    groups.now.clearLayers();
+    var now = new Date();
+    var s = sunAt(now);
+    if (s.altitude > -0.6){
+      L.polyline([[state.obs.lat, state.obs.lng], dest(s.azimuth, RADIUS * 1.3)],
+        { color: '#FF7A1A', weight: 2, opacity: 0.9 }).addTo(groups.now);
+      L.marker(sunLatLng(s), {
+        interactive: false,
+        icon: L.divIcon({ className:'', html:'<div class="now-dot"></div>', iconSize:[15,15], iconAnchor:[8,8] })
+      }).addTo(groups.now);
+      document.getElementById('vNow').innerHTML =
+        Math.round(s.azimuth) + '°<small> / 高度' + Math.round(s.altitude) + '°</small>';
+    } else {
+      document.getElementById('vNow').innerHTML = '地平線下';
+    }
+  }
+
+  // ---------- 全体更新 ----------
+  function redraw(){
+    if (state.show.today)  drawPath(state.date, groups.today, '#FFB020', true);  else groups.today.clearLayers();
+    if (state.show.summer) drawPath(solsticeDate('summer'), groups.summer, '#FF6B6B', false); else groups.summer.clearLayers();
+    if (state.show.winter) drawPath(solsticeDate('winter'), groups.winter, '#4DA3FF', false); else groups.winter.clearLayers();
+    drawNow();
+
+    var t = SunCalc.getTimes(dateAtNoon(state.date), state.obs.lat, state.obs.lng);
+    document.getElementById('vSunrise').textContent = fmtTime(t.sunrise);
+    document.getElementById('vNoon').textContent    = fmtTime(t.solarNoon);
+    document.getElementById('vSunset').textContent  = fmtTime(t.sunset);
+    // マジックアワー: 朝=日の出〜GH終了 / 夕=GH開始〜日の入
+    document.getElementById('vGHam').textContent = fmtRange(t.sunrise, t.goldenHourEnd);
+    document.getElementById('vGHpm').textContent = fmtRange(t.goldenHour, t.sunset);
+  }
+
+  function setObserver(lat, lng, pan){
+    state.obs = { lat: lat, lng: lng };
+    obsMarker.setLatLng([lat, lng]);
+    if (pan) map.setView([lat, lng], Math.max(map.getZoom(), 15));
+    redraw();
+    save();
+  }
+
+  function setDate(d){
+    state.date = d;
+    document.getElementById('dateInput').value =
+      d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+    redraw();
+  }
+
+  // ---------- UIイベント ----------
+  document.querySelectorAll('.chip').forEach(function(chip){
+    var k = chip.dataset.k;
+    chip.classList.toggle('on', !!state.show[k]);   // 保存状態を反映
+    chip.addEventListener('click', function(){
+      state.show[k] = !state.show[k];
+      chip.classList.toggle('on', state.show[k]);
+      redraw();
+      save();
+    });
+  });
+
+  document.getElementById('dateInput').addEventListener('change', function(e){
+    if (!e.target.value) return;
+    var p = e.target.value.split('-');
+    setDate(new Date(+p[0], +p[1]-1, +p[2]));
+  });
+  document.getElementById('prevDay').addEventListener('click', function(){
+    var d = new Date(state.date); d.setDate(d.getDate()-1); setDate(d);
+  });
+  document.getElementById('nextDay').addEventListener('click', function(){
+    var d = new Date(state.date); d.setDate(d.getDate()+1); setDate(d);
+  });
+  document.getElementById('todayBtn').addEventListener('click', function(){ setDate(new Date()); });
+
+  var layerBtn = document.getElementById('layerBtn');
+  layerBtn.textContent = state.satellite ? '地図' : '航空写真';
+  layerBtn.addEventListener('click', function(){
+    state.satellite = !state.satellite;
+    if (state.satellite){ map.removeLayer(osmLayer); satLayer.addTo(map); this.textContent = '地図'; }
+    else { map.removeLayer(satLayer); osmLayer.addTo(map); this.textContent = '航空写真'; }
+    save();
+  });
+
+  var toastTimer;
+  function toast(msg){
+    var el = document.getElementById('toast');
+    el.textContent = msg; el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2500);
+  }
+
+  document.getElementById('locateBtn').addEventListener('click', function(){
+    if (!navigator.geolocation){ toast('この端末では現在地を取得できません'); return; }
+    toast('現在地を取得中…');
+    navigator.geolocation.getCurrentPosition(
+      function(pos){ setObserver(pos.coords.latitude, pos.coords.longitude, true); toast('現在地に移動しました'); },
+      function(){ toast('現在地を取得できませんでした'); },
+      { enableHighAccuracy: true, timeout: 8000 }
+    );
+  });
+
+  // ---------- 地点検索（Nominatim / OpenStreetMap） ----------
+  var searchBox = document.getElementById('searchBox');
+  var searchInput = document.getElementById('searchInput');
+  var searchResults = document.getElementById('searchResults');
+
+  document.getElementById('searchBtn').addEventListener('click', function(){
+    searchBox.hidden = !searchBox.hidden;
+    if (!searchBox.hidden) searchInput.focus();
+  });
+  searchInput.addEventListener('keydown', function(e){
+    if (e.key === 'Enter') doSearch(searchInput.value.trim());
+  });
+
+  function doSearch(q){
+    if (!q) return;
+    searchResults.innerHTML = '<div class="result sub">検索中…</div>';
+    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=5&accept-language=ja&q=' + encodeURIComponent(q))
+      .then(function(r){ return r.json(); })
+      .then(function(list){
+        if (!list.length){
+          searchResults.innerHTML = '<div class="result sub">見つかりませんでした</div>';
+          return;
+        }
+        searchResults.innerHTML = '';
+        list.forEach(function(item){
+          var div = document.createElement('div');
+          div.className = 'result';
+          div.textContent = item.display_name;
+          div.addEventListener('click', function(){
+            setObserver(+item.lat, +item.lon, true);
+            searchBox.hidden = true;
+            searchResults.innerHTML = '';
+            searchInput.value = '';
+          });
+          searchResults.appendChild(div);
+        });
+      })
+      .catch(function(){
+        searchResults.innerHTML = '<div class="result sub">検索に失敗しました（ネット接続を確認）</div>';
+      });
+  }
+
+  // ---------- 起動 ----------
+  setDate(new Date());
+  setInterval(drawNow, 60000); // 現在の太陽は毎分更新
+
+  // ---------- PWA: Service Worker 登録 ----------
+  if ('serviceWorker' in navigator &&
+      (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')){
+    navigator.serviceWorker.register('sw.js').catch(function(){ /* 登録失敗時もアプリは動作する */ });
+  }
+})();
+</script>
+</body>
+</html>
