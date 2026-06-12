@@ -1,6 +1,6 @@
 /* SunPath Service Worker — アプリ本体をキャッシュしてオフライン起動を可能にする
    （地図タイル・地点検索はネット接続が必要） */
-var CACHE = 'sunpath-v6';
+var CACHE = 'sunpath-v7';
 var ASSETS = [
   './',
   'index.html',
