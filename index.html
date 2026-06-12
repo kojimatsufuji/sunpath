@@ -345,9 +345,13 @@
       if (s.altitude > -0.6) pts.push(sunLatLng(s));
     }
     if (pts.length < 2) return; // 太陽が昇らない日
-    L.polyline(pts, { color: color, weight: withHourMarkers ? 2.5 : 2,
-                      opacity: withHourMarkers ? 0.95 : 0.7,
-                      dashArray: withHourMarkers ? null : '5 6' }).addTo(group);
+    if (withHourMarkers){
+      L.polyline(pts, { color: color, weight: 2.5, opacity: 0.95 }).addTo(group);
+    } else {
+      // 夏至・冬至の破線: 航空写真上で沈まないよう、暗色の縁取りを下に敷く
+      L.polyline(pts, { color: '#0b0c0f', weight: 5.5, opacity: 0.55, dashArray: '6 8' }).addTo(group);
+      L.polyline(pts, { color: color, weight: 2.5, opacity: 1, dashArray: '6 8' }).addTo(group);
+    }
     if (!withHourMarkers) return;
     for (var h = 0; h < 24; h++){
       var hd = new Date(baseDate); hd.setHours(h, 0, 0, 0);
