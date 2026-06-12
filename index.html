@@ -104,18 +104,19 @@
   .datewrap{
     position:relative; flex:1 1 0px; width:0; min-width:0; display:flex;
   }
-  .dow{
-    /* 入力欄の右端に重ねる曜日ラベル（入力幅を消費しない） */
-    position:absolute; right:42px; top:50%; transform:translateY(-50%);
-    color:var(--sub); font-size:12px; pointer-events:none;
+  /* 表示は自前のテキスト（日付＋曜日を並べられる）。日付部品は透明で上に重ね、タップでカレンダーを開く */
+  .datedisp{
+    flex:1 1 0px; width:0; min-width:0;
+    border:1px solid var(--hairline); border-radius:10px;
+    color:var(--text); font-size:13px; text-align:center;
+    padding:8px 10px; font-variant-numeric:tabular-nums; white-space:nowrap;
+    overflow:hidden;
   }
+  .datedisp .dow{ color:var(--sub); margin-left:6px; }
   input[type="date"]{
-    /* iOS Safariの日付入力はUA固有の最小幅で縮まないため、専用行を与えた上で外観もリセットする */
-    -webkit-appearance:none; appearance:none;
-    flex:1 1 0px; width:0; min-width:0; background:transparent; border:1px solid var(--hairline);
-    text-align:center;
-    border-radius:10px; color:var(--text); font:inherit; font-size:13px;
-    padding:8px 10px; font-variant-numeric:tabular-nums;
+    position:absolute; inset:0; width:100%; height:100%;
+    opacity:0; -webkit-appearance:none; appearance:none;
+    border:0; margin:0; padding:0; font:inherit;
   }
   .today-btn{
     border:none; background:rgba(255,255,255,.08); color:var(--text);
@@ -208,8 +209,7 @@
     .row + .row{ margin-top:10px; }
     .stepper{ gap:4px; }
     .step-btn{ width:28px; height:32px; font-size:14px; }
-    input[type="date"]{ font-size:12px; padding:8px 4px; }
-    .dow{ right:10px; font-size:11px; }  /* iOSはカレンダーアイコンが無いため右端寄せ */
+    .datedisp{ font-size:12px; padding:8px 4px; }
     .today-btn{ padding:8px 9px; font-size:11px; }
   }
 </style>
@@ -242,8 +242,8 @@
     <div class="stepper">
       <button class="step-btn" id="prevDay">‹</button>
       <span class="datewrap">
-        <input type="date" id="dateInput">
-        <span class="dow" id="dowLabel"></span>
+        <span class="datedisp" id="dateDisp"></span>
+        <input type="date" id="dateInput" aria-label="日付">
       </span>
       <button class="step-btn" id="nextDay">›</button>
     </div>
@@ -437,10 +437,11 @@
 
   function setDate(d){
     state.date = d;
-    document.getElementById('dateInput').value =
-      d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
-    document.getElementById('dowLabel').textContent =
-      '(' + ['日','月','火','水','木','金','土'][d.getDay()] + ')';
+    var y = d.getFullYear(), mo = ('0'+(d.getMonth()+1)).slice(-2), da = ('0'+d.getDate()).slice(-2);
+    document.getElementById('dateInput').value = y + '-' + mo + '-' + da;
+    document.getElementById('dateDisp').innerHTML =
+      y + '/' + mo + '/' + da +
+      '<span class="dow">(' + ['日','月','火','水','木','金','土'][d.getDay()] + ')</span>';
     redraw();
   }
 
@@ -460,6 +461,12 @@
     if (!e.target.value) return;
     var p = e.target.value.split('-');
     setDate(new Date(+p[0], +p[1]-1, +p[2]));
+  });
+  // デスクトップブラウザでは透明入力のクリックだけでピッカーが開かないため明示的に開く
+  document.querySelector('.datewrap').addEventListener('click', function(){
+    var input = document.getElementById('dateInput');
+    try { if (input.showPicker) input.showPicker(); else input.focus(); }
+    catch(err){ input.focus(); }
   });
   document.getElementById('prevDay').addEventListener('click', function(){
     var d = new Date(state.date); d.setDate(d.getDate()-1); setDate(d);
