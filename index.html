@@ -101,6 +101,14 @@
     width:34px; height:34px; border-radius:10px; border:1px solid var(--hairline);
     background:transparent; color:var(--text); font-size:16px; cursor:pointer; line-height:1;
   }
+  .datewrap{
+    position:relative; flex:1 1 0px; width:0; min-width:0; display:flex;
+  }
+  .dow{
+    /* 入力欄の右端に重ねる曜日ラベル（入力幅を消費しない） */
+    position:absolute; right:42px; top:50%; transform:translateY(-50%);
+    color:var(--sub); font-size:12px; pointer-events:none;
+  }
   input[type="date"]{
     /* iOS Safariの日付入力はUA固有の最小幅で縮まないため、専用行を与えた上で外観もリセットする */
     -webkit-appearance:none; appearance:none;
@@ -201,6 +209,7 @@
     .stepper{ gap:4px; }
     .step-btn{ width:28px; height:32px; font-size:14px; }
     input[type="date"]{ font-size:12px; padding:8px 4px; }
+    .dow{ right:10px; font-size:11px; }  /* iOSはカレンダーアイコンが無いため右端寄せ */
     .today-btn{ padding:8px 9px; font-size:11px; }
   }
 </style>
@@ -232,7 +241,10 @@
   <div class="row daterow">
     <div class="stepper">
       <button class="step-btn" id="prevDay">‹</button>
-      <input type="date" id="dateInput">
+      <span class="datewrap">
+        <input type="date" id="dateInput">
+        <span class="dow" id="dowLabel"></span>
+      </span>
       <button class="step-btn" id="nextDay">›</button>
     </div>
     <button class="today-btn" id="todayBtn">今日へ</button>
@@ -427,6 +439,8 @@
     state.date = d;
     document.getElementById('dateInput').value =
       d.getFullYear() + '-' + ('0'+(d.getMonth()+1)).slice(-2) + '-' + ('0'+d.getDate()).slice(-2);
+    document.getElementById('dowLabel').textContent =
+      '(' + ['日','月','火','水','木','金','土'][d.getDay()] + ')';
     redraw();
   }
 
