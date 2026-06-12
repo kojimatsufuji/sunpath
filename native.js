@@ -6,8 +6,10 @@
   var C = window.Capacitor;
   if (!C || !C.isNativePlatform || !C.isNativePlatform()) return;
 
-  // ---- テスト用ID（本番リリース前に差し替え必須） ----
-  var BANNER_AD_ID = 'ca-app-pub-3940256099942544/2934735716'; // Google公式のiOSバナーテストID
+  // ---- 広告ID（本番） ----
+  var BANNER_AD_ID = 'ca-app-pub-7386790459032565/5869378117'; // ソラミチ バナー（soramichi-banner）
+  // 開発中は true のまま（自分の端末で本番広告を表示・タップするとポリシー違反になるため）。
+  // App Store 提出用ビルドの直前に false へ切り替える。
   var IS_TESTING = true;
 
   var noAds = false;
@@ -25,7 +27,15 @@
 
   // ---- AdMob バナー ----
   try {
-    var AdMob = C.registerPlugin('AdMob');
+    // Capacitorランタイムのバージョン差異に対応してプラグインを解決する
+    var AdMob = null;
+    if (C.Plugins && C.Plugins.AdMob) AdMob = C.Plugins.AdMob;
+    else if (typeof C.registerPlugin === 'function') AdMob = C.registerPlugin('AdMob');
+    if (!AdMob){
+      console.warn('AdMob not found. Capacitor keys:', Object.keys(C).join(','),
+                   'Plugins:', C.Plugins ? Object.keys(C.Plugins).join(',') : 'none');
+      return;
+    }
     AdMob.addListener('bannerAdSizeChanged', function(info){
       window.__bannerHeight = (info && info.height) ? info.height : 0;
       if (window.__refitBottomUI) window.__refitBottomUI();
