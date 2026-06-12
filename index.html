@@ -3,7 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SunPath — 太陽の軌跡</title>
+<title>ソラミチ — 太陽の軌跡マップ</title>
+<meta name="apple-mobile-web-app-title" content="ソラミチ">
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#0b0c0f">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -204,6 +205,7 @@
     background:none; border:none; color:var(--sub);
     font-size:11px; text-decoration:underline; cursor:pointer;
   }
+  .noads[hidden]{ display:none; }  /* display:block が hidden属性を打ち消さないように */
 
   /* ---- 狭い画面（スマホ縦持ち）の調整 ----
      元のUI構成（ロゴ表示・「今日へ」は日付の横）のまま、サイズと余白だけ詰めて収める */
@@ -225,7 +227,7 @@
 <div id="map"></div>
 
 <header class="topbar">
-  <div class="pill brand">SUNPATH</div>
+  <div class="pill brand">ソラミチ</div>
   <div class="top-actions">
     <button class="pill" id="searchBtn">検索</button>
     <button class="pill" id="layerBtn">地図</button>

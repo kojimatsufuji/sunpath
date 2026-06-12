@@ -1,6 +1,6 @@
 /* SunPath Service Worker — アプリ本体をキャッシュしてオフライン起動を可能にする
    （地図タイル・地点検索はネット接続が必要） */
-var CACHE = 'sunpath-v12';
+var CACHE = 'sunpath-v14';
 var ASSETS = [
   './',
   'index.html',
@@ -14,9 +14,15 @@ var ASSETS = [
 ];
 
 self.addEventListener('install', function(e){
+  // HTTPキャッシュの古いファイルを取り込まないよう、必ずネットワークから取得する
   e.waitUntil(
-    caches.open(CACHE).then(function(cache){ return cache.addAll(ASSETS); })
-      .then(function(){ return self.skipWaiting(); })
+    caches.open(CACHE).then(function(cache){
+      return Promise.all(ASSETS.map(function(url){
+        return fetch(url, { cache: 'no-cache' }).then(function(res){
+          if (res.ok || res.type === 'opaque') return cache.put(url, res);
+        });
+      }));
+    }).then(function(){ return self.skipWaiting(); })
   );
 });
 
