@@ -141,6 +141,22 @@
     background:#fff; border:3px solid rgba(17,18,22,.65);
     box-shadow:0 1px 8px rgba(0,0,0,.5);
   }
+  /* 現在地（青ドット＋方位ビーム）。青はGoogleマップ等の慣習に合わせた現在地色 */
+  .loc-wrap{ position:relative; width:18px; height:18px; }
+  .loc-beam{
+    position:absolute; left:50%; top:50%; width:92px; height:92px;
+    margin-left:-46px; margin-top:-46px;
+    transform-origin:50% 50%; border-radius:50%; pointer-events:none;
+    background: conic-gradient(from -35deg, rgba(66,133,244,.65) 0deg, rgba(66,133,244,.65) 70deg, transparent 70deg);
+    -webkit-mask-image: radial-gradient(circle, rgba(0,0,0,.95) 0%, transparent 66%);
+    mask-image: radial-gradient(circle, rgba(0,0,0,.95) 0%, transparent 66%);
+    opacity:0; transition:opacity .3s;  /* コンパス取得までは非表示 */
+  }
+  .loc-dot{
+    position:absolute; inset:0; border-radius:50%;
+    background:#4285F4; border:2.5px solid #fff;
+    box-shadow:0 1px 8px rgba(0,0,0,.5);
+  }
 
   /* ---- ARモード ---- */
   #arView{ position:fixed; inset:0; z-index:2000; background:#000; }
@@ -456,11 +472,81 @@
     toastTimer = setTimeout(function(){ el.classList.remove('show'); }, 2500);
   }
 
+  // ---------- 現在地トラッキング（青ドット＋方位ビーム） ----------
+  // 観測点（白ドット）とは独立して「自分の位置と携帯の向き」を地図上に示す。
+  var locMarker = null, locCircle = null, locWatchId = null, locHeading = null;
+
+  function updateLocMarker(lat, lng, acc){
+    if (!locMarker){
+      locCircle = L.circle([lat, lng], {
+        radius: acc || 0, color: '#4285F4', weight: 1, opacity: .25,
+        fillColor: '#4285F4', fillOpacity: .08, interactive: false
+      }).addTo(map);
+      locMarker = L.marker([lat, lng], {
+        interactive: false, zIndexOffset: 500,
+        icon: L.divIcon({ className:'',
+          html:'<div class="loc-wrap"><div class="loc-beam"></div><div class="loc-dot"></div></div>',
+          iconSize:[18,18], iconAnchor:[9,9] })
+      }).addTo(map);
+    } else {
+      locMarker.setLatLng([lat, lng]);
+      locCircle.setLatLng([lat, lng]).setRadius(acc || 0);
+    }
+  }
+
+  function onMapOrient(e){
+    var h = null;
+    if (typeof e.webkitCompassHeading === 'number' && !isNaN(e.webkitCompassHeading)) h = e.webkitCompassHeading;
+    else if (e.alpha != null && (e.absolute || e.type === 'deviceorientationabsolute')) h = (360 - e.alpha) % 360;
+    if (h === null) return;
+    locHeading = lowpassAngle(locHeading, h, 0.25);
+    if (locMarker && locMarker.getElement()){
+      var beam = locMarker.getElement().querySelector('.loc-beam');
+      if (beam){
+        beam.style.transform = 'rotate(' + locHeading + 'deg)';
+        beam.style.opacity = '1';
+      }
+    }
+  }
+
+  var mapOrientStarted = false;
+  function startMapOrient(){
+    if (mapOrientStarted) return;
+    var ready;
+    if (window.DeviceOrientationEvent && typeof DeviceOrientationEvent.requestPermission === 'function'){
+      ready = DeviceOrientationEvent.requestPermission().then(function(r){
+        if (r !== 'granted') throw new Error('denied');
+      });
+    } else {
+      ready = Promise.resolve();
+    }
+    ready.then(function(){
+      mapOrientStarted = true;
+      window.addEventListener('deviceorientationabsolute', onMapOrient);
+      window.addEventListener('deviceorientation', onMapOrient);
+    }).catch(function(){ /* 許可なし→ビームなしの青ドットのみで続行 */ });
+  }
+
+  function startLocWatch(){
+    if (locWatchId !== null || !navigator.geolocation) return;
+    locWatchId = navigator.geolocation.watchPosition(
+      function(pos){ updateLocMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy); },
+      function(){ /* 取得失敗時は静かにスキップ（ボタン側でトースト済み） */ },
+      { enableHighAccuracy: true }
+    );
+  }
+
   document.getElementById('locateBtn').addEventListener('click', function(){
     if (!navigator.geolocation){ toast('この端末では現在地を取得できません'); return; }
     toast('現在地を取得中…');
+    startMapOrient();  // ユーザー操作起点でセンサー許可を要求（iOS）
     navigator.geolocation.getCurrentPosition(
-      function(pos){ setObserver(pos.coords.latitude, pos.coords.longitude, true); toast('現在地に移動しました'); },
+      function(pos){
+        updateLocMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+        setObserver(pos.coords.latitude, pos.coords.longitude, true);
+        startLocWatch();  // 以降は移動に自動追従
+        toast('現在地に移動しました');
+      },
       function(){ toast('現在地を取得できませんでした'); },
       { enableHighAccuracy: true, timeout: 8000 }
     );
