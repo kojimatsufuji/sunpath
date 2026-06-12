@@ -1,6 +1,6 @@
 /* SunPath Service Worker — アプリ本体をキャッシュしてオフライン起動を可能にする
    （地図タイル・地点検索はネット接続が必要） */
-var CACHE = 'sunpath-v11';
+var CACHE = 'sunpath-v12';
 var ASSETS = [
   './',
   'index.html',
@@ -8,9 +8,9 @@ var ASSETS = [
   'icons/icon-192.png',
   'icons/icon-512.png',
   'icons/apple-touch-icon.png',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css',
-  'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js',
-  'https://unpkg.com/suncalc@1.9.0/suncalc.js'
+  'vendor/leaflet/leaflet.css',
+  'vendor/leaflet/leaflet.js',
+  'vendor/suncalc.js'
 ];
 
 self.addEventListener('install', function(e){

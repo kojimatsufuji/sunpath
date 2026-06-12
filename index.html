@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
 <link rel="icon" href="icons/icon-192.png">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="vendor/leaflet/leaflet.css">
 <style>
   :root{
     --panel: rgba(17,18,22,.82);
@@ -198,6 +198,13 @@
   }
   .toast.show{ opacity:1; }
 
+  /* ネイティブアプリ専用の「広告を削除」リンク（Webでは非表示のまま） */
+  .noads{
+    display:block; margin:10px 0 0 auto; padding:4px 2px;
+    background:none; border:none; color:var(--sub);
+    font-size:11px; text-decoration:underline; cursor:pointer;
+  }
+
   /* ---- 狭い画面（スマホ縦持ち）の調整 ----
      元のUI構成（ロゴ表示・「今日へ」は日付の横）のまま、サイズと余白だけ詰めて収める */
   @media (max-width: 520px){
@@ -259,6 +266,7 @@
     <div class="stat"><span class="lbl">マジックアワー 朝</span><span class="val" id="vGHam">–</span></div>
     <div class="stat"><span class="lbl">マジックアワー 夕</span><span class="val" id="vGHpm">–</span></div>
   </div>
+  <button id="noAdsBtn" class="noads" hidden>広告を削除</button>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -270,8 +278,8 @@
   <div class="ar-status" id="arStatus">コンパス待機中…</div>
 </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/suncalc@1.9.0/suncalc.js"></script>
+<script src="vendor/leaflet/leaflet.js"></script>
+<script src="vendor/suncalc.js"></script>
 <script>
 (function(){
   'use strict';
@@ -862,11 +870,13 @@
     var vv = window.visualViewport;
     if (!vv) return;
     var visBottom = vv.offsetTop + vv.height; // レイアウトビューポート座標系での可視領域下端
+    visBottom -= (window.__bannerHeight || 0);  // ネイティブアプリの広告バナー分を持ち上げる
     sheetEl.style.bottom = 'auto';
     sheetEl.style.top = Math.round(visBottom - sheetEl.offsetHeight - 12) + 'px';
     arStatus.style.bottom = 'auto';
     arStatus.style.top = Math.round(visBottom - arStatus.offsetHeight - 14) + 'px';
   }
+  window.__refitBottomUI = fitBottomUI;  // native.js（広告バナー）から呼べるように公開
   if (window.visualViewport){
     window.visualViewport.addEventListener('resize', fitBottomUI);
     window.visualViewport.addEventListener('scroll', fitBottomUI);
@@ -880,10 +890,17 @@
   setDate(new Date());
   setInterval(drawNow, 60000); // 現在の太陽は毎分更新
 
-  // ---------- PWA: Service Worker 登録 ----------
-  if ('serviceWorker' in navigator &&
+  // ---------- PWA: Service Worker 登録（ネイティブアプリでは不要） ----------
+  if (!window.Capacitor && 'serviceWorker' in navigator &&
       (location.protocol === 'https:' || location.hostname === 'localhost' || location.hostname === '127.0.0.1')){
     navigator.serviceWorker.register('sw.js').catch(function(){ /* 登録失敗時もアプリは動作する */ });
+  }
+
+  // ---------- ネイティブアプリ（Capacitor）でのみ広告・課金処理を読み込む ----------
+  if (window.Capacitor){
+    var ns = document.createElement('script');
+    ns.src = 'native.js';
+    document.body.appendChild(ns);
   }
 })();
 </script>
