@@ -43,9 +43,71 @@
     color:var(--text); font-size:13px; line-height:1;
     padding:11px 16px; cursor:pointer; user-select:none;
   }
-  .brand{ font-weight:700; letter-spacing:.1em; font-size:13px; }
+  /* ブランド（ソラミチ）ボタン：他のアクション(.pill)と差別化。アンバーの枠＋太陽ドット＋情報ダイアログを開く */
+  .brand{
+    display:inline-flex; align-items:center; gap:7px;
+    background:var(--panel); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
+    border:1px solid rgba(255,176,32,.55); border-radius:999px;
+    color:var(--text); font-weight:700; letter-spacing:.1em; font-size:13px; line-height:1;
+    padding:10px 15px; cursor:pointer; user-select:none;
+  }
+  .brand .brand-dot{ width:9px; height:9px; border-radius:50%; background:var(--amber); box-shadow:0 0 8px rgba(255,176,32,.85); flex:none; }
+  .brand:active{ background:rgba(40,42,50,.9); }
   .top-actions{ display:flex; gap:8px; }
   button.pill:active{ background:rgba(40,42,50,.9); }
+
+  /* アプリ情報の全画面ダイアログ */
+  .about{ position:fixed; inset:0; z-index:2000; background:rgba(8,9,12,.97);
+    backdrop-filter:blur(22px); -webkit-backdrop-filter:blur(22px);
+    display:flex; align-items:center; justify-content:center; color:var(--text);
+    padding:40px 24px calc(env(safe-area-inset-bottom) + 24px);
+    opacity:0; transition:opacity .2s ease; }          /* 退場（既定）= 速くフェードアウト */
+  .about.open{ opacity:1; transition:opacity .34s ease; } /* 入場 = ややゆっくりフェードイン */
+  .about[hidden]{ display:none; }
+  .about-x{ position:absolute; top:calc(env(safe-area-inset-top) + 12px); right:16px;
+    width:42px; height:42px; border-radius:50%; background:rgba(255,255,255,.08);
+    border:none; color:var(--text); font-size:24px; line-height:1; cursor:pointer; }
+  .about-body{ width:100%; max-width:330px; text-align:center; }
+  .about-icon{ width:88px; height:88px; border-radius:20px; border:1px solid var(--hairline); display:block; margin:0 auto 18px; }
+  .about-name{ font-size:26px; font-weight:700; letter-spacing:.06em; }
+  .about-tag{ font-size:14px; color:var(--sub); margin:4px 0 28px; }
+  .about-row{ display:flex; justify-content:space-between; align-items:center; gap:12px;
+    padding:14px 2px; border-top:1px solid var(--hairline); font-size:14px; text-align:left; }
+  .about-row:last-child{ border-bottom:1px solid var(--hairline); }
+  .about-row > span{ color:var(--sub); flex:none; }
+  .about-row > b{ font-weight:600; }
+  .about-row a{ color:var(--blue); text-decoration:none; word-break:break-all; }
+  /* 情報ダイアログの開閉トランジション（入場=ゆっくり＋スタッガー / 退場=速い）。
+     既定（.open なし）に退場用の短い transition を置き、.open 側に入場用の長い transition＋遅延を上書きする。 */
+  .about-body{ opacity:0; transform:scale(.96);
+    transition:opacity .16s ease, transform .16s ease; }
+  .about.open .about-body{ opacity:1; transform:none;
+    transition:opacity .3s ease, transform .45s cubic-bezier(.16,1,.3,1); }
+  .about-icon, .about-name, .about-tag, .about-row, .about-x{
+    opacity:0; transition:opacity .16s ease, transform .16s ease; }
+  .about-icon{ transform:translateY(10px) scale(.84); }
+  .about-name, .about-tag, .about-row{ transform:translateY(12px); }
+  .about-x{ transform:scale(.8); }
+  .about.open .about-icon,
+  .about.open .about-name,
+  .about.open .about-tag,
+  .about.open .about-row,
+  .about.open .about-x{ opacity:1; transform:none; }
+  /* 入場のスタッガー（中身が下から順にせり上がる）。アイコンは軽くオーバーシュートさせて“ポップ” */
+  .about.open .about-icon{ transition:opacity .5s ease .06s, transform .6s cubic-bezier(.2,.8,.2,1.12) .06s; }
+  .about.open .about-name{ transition:opacity .45s ease .14s, transform .55s cubic-bezier(.16,1,.3,1) .14s; }
+  .about.open .about-tag { transition:opacity .45s ease .18s, transform .55s cubic-bezier(.16,1,.3,1) .18s; }
+  .about.open .about-row:nth-child(4){ transition:opacity .45s ease .22s, transform .55s cubic-bezier(.16,1,.3,1) .22s; }
+  .about.open .about-row:nth-child(5){ transition:opacity .45s ease .27s, transform .55s cubic-bezier(.16,1,.3,1) .27s; }
+  .about.open .about-row:nth-child(6){ transition:opacity .45s ease .32s, transform .55s cubic-bezier(.16,1,.3,1) .32s; }
+  .about.open .about-x{ transition:opacity .4s ease .2s, transform .4s ease .2s; }
+  @media (prefers-reduced-motion: reduce){
+    .about, .about.open, .about-body, .about.open .about-body,
+    .about-icon, .about-name, .about-tag, .about-row, .about-x,
+    .about.open .about-icon, .about.open .about-name, .about.open .about-tag,
+    .about.open .about-row, .about.open .about-x{
+      transition-duration:.01ms !important; transition-delay:0s !important; }
+  }
 
   /* ---- 検索ボックス ---- */
   .searchbox{
@@ -58,7 +120,8 @@
   }
   .searchbox input{
     width:100%; background:rgba(255,255,255,.06); border:1px solid var(--hairline);
-    border-radius:10px; color:var(--text); font:inherit; font-size:14px;
+    /* font-size は16px以上にする（iOSは16px未満の入力欄でフォーカス時に画面を自動拡大するため） */
+    border-radius:10px; color:var(--text); font:inherit; font-size:16px;
     padding:10px 12px; outline:none;
   }
   .search-results{ max-height:40vh; overflow-y:auto; }
@@ -206,6 +269,8 @@
     font-size:11px; text-decoration:underline; cursor:pointer;
   }
   .noads[hidden]{ display:none; }  /* display:block が hidden属性を打ち消さないように */
+  .noads-row{ display:flex; justify-content:flex-end; gap:16px; margin-top:6px; }
+  .noads-row .noads{ margin:0; }
 
   /* ---- 狭い画面（スマホ縦持ち）の調整 ----
      元のUI構成（ロゴ表示・「今日へ」は日付の横）のまま、サイズと余白だけ詰めて収める */
@@ -227,7 +292,7 @@
 <div id="map"></div>
 
 <header class="topbar">
-  <div class="pill brand">ソラミチ</div>
+  <button class="brand" id="aboutBtn" aria-label="アプリ情報"><span class="brand-dot"></span>ソラミチ</button>
   <div class="top-actions">
     <button class="pill" id="searchBtn">検索</button>
     <button class="pill" id="layerBtn">地図</button>
@@ -268,10 +333,25 @@
     <div class="stat"><span class="lbl">マジックアワー 朝</span><span class="val" id="vGHam">–</span></div>
     <div class="stat"><span class="lbl">マジックアワー 夕</span><span class="val" id="vGHpm">–</span></div>
   </div>
-  <button id="noAdsBtn" class="noads" hidden>広告を削除</button>
+  <div class="noads-row">
+    <button id="restoreBtn" class="noads" hidden>購入を復元</button>
+    <button id="noAdsBtn" class="noads" hidden>広告を削除</button>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="about" id="about" hidden>
+  <button class="about-x" id="aboutClose" aria-label="閉じる">×</button>
+  <div class="about-body">
+    <img class="about-icon" src="icons/icon-192.png" alt="ソラミチ">
+    <div class="about-name">ソラミチ</div>
+    <div class="about-tag">太陽の軌跡マップ</div>
+    <div class="about-row"><span>バージョン</span><b id="aboutVer">1.0.1</b></div>
+    <div class="about-row"><span>開発者</span><b>Koji Matsufuji</b></div>
+    <div class="about-row"><span>サイト</span><a href="https://unigram.design" target="_blank" rel="noopener noreferrer">unigram.design</a></div>
+  </div>
+</div>
 
 <div id="arView" hidden>
   <video id="arVideo" playsinline autoplay muted></video>
@@ -308,16 +388,42 @@
   }
 
   // ---------- 地図 ----------
+  // 衛星写真（Esri World Imagery）は ArcGIS Location Platform のAPIキー認証で取得する。
+  // このキーは「公開アプリ用・従量課金オフ（無料枠で停止＝料金リスクなし）」。
+  // キーは約1年で期限切れになるため、アプリを毎年作り直さずに済むよう、
+  // 起動時にネット上の最新キー(esri-token.txt)を読み込み、取れなければ同梱の予備キーを使う。
+  var ESRI_ATTR = 'Powered by <a href="https://www.esri.com/" target="_blank" rel="noopener noreferrer">Esri</a> | Source: Esri, Vantor, GeoEye, Earthstar Geographics, CNES/Airbus DS, USDA, USGS, AeroGRID, IGN, and the GIS User Community';
+  // 同梱の予備キー。期限切れ後は下記 esri-token.txt を差し替えるだけで Web・アプリ両方が自動で最新化される。
+  var ESRI_TOKEN_FALLBACK = 'AAPTaxnIW1bSN7Za7lejAP5N0tw..JIXoFDJm-3g-4pG0vr2SCX4fmDc7z_HpGP_IfEnw3JYQNjaMRNLgPWpsjGwMFY1M3LXhM7ZTVTnb7t91Qi9IExVVvOdqhhbZ4llNxwNfuLDn6YOoL6rlRM1AIIRp5ix7y4A5R5UlZ9oX6UMy7uFfMneRmYUFrCtSfekNLlsexy8FUiDoqzRiXcmFUWJVzmtfK1PKxcD2UnrM-uTEgskZCZbC_Ol19GAam9pQWh7qsgrxyDqtsN1Vi6RU71wnAT1_4t0IEVNX';
+  var ESRI_TOKEN_URL = 'https://kojimatsufuji.github.io/sunpath/esri-token.txt'; // 最新キーの置き場所（期限更新はこのファイルだけ差し替える）
+  function esriImageryUrl(token){
+    return 'https://ibasemaps-api.arcgis.com/arcgis/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}?token=' + token;
+  }
+
   var map = L.map('map', { zoomControl: false })
     .setView([state.obs.lat, state.obs.lng], saved.zoom || 16);
-  var satLayer = L.tileLayer(
-    'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    { maxZoom: 19, attribution: 'Tiles © Esri' });
+  var satLayer = L.tileLayer(esriImageryUrl(ESRI_TOKEN_FALLBACK),
+    { maxZoom: 19, attribution: ESRI_ATTR });
   var osmLayer = L.tileLayer(
     'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
     { maxZoom: 19, attribution: '© OpenStreetMap contributors' });
   (state.satellite ? satLayer : osmLayer).addTo(map);
   map.on('zoomend', save);
+
+  // 起動時に最新のEsriキーを取得して衛星レイヤーを更新（失敗時は同梱の予備キーのまま動作）
+  (function refreshEsriToken(){
+    if (!window.fetch) return;
+    fetch(ESRI_TOKEN_URL, { cache: 'no-store' })
+      .then(function(r){ return r.ok ? r.text() : null; })
+      .then(function(t){
+        if (!t) return;
+        t = t.trim();
+        if (t.indexOf('AAP') === 0 && t !== ESRI_TOKEN_FALLBACK){
+          satLayer.setUrl(esriImageryUrl(t));  // 新しいキーでタイルを再取得
+        }
+      })
+      .catch(function(){ /* オフライン等 → 同梱キーで続行 */ });
+  })();
 
   var groups = {
     summer: L.layerGroup().addTo(map),
@@ -558,30 +664,70 @@
     }).catch(function(){ /* 許可なし→ビームなしの青ドットのみで続行 */ });
   }
 
+  // 位置情報：ネイティブ(Capacitor)はプラグイン、Webはブラウザ標準APIを使う。
+  // ネイティブでは「ソラミチ」名＋日本語説明のOSダイアログが出る（Webの "localhost" 表記にならない）。
+  var CapGeo = (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Geolocation) || null;
+  function geoGetCurrent(onOk, onErr){
+    var opts = { enableHighAccuracy: true, timeout: 8000 };
+    if (CapGeo){
+      var go = function(){ CapGeo.getCurrentPosition(opts).then(onOk).catch(function(e){ if (onErr) onErr(e); }); };
+      if (CapGeo.requestPermissions){ CapGeo.requestPermissions().then(go, go); } else { go(); }
+    } else if (navigator.geolocation){
+      navigator.geolocation.getCurrentPosition(onOk, onErr || function(){}, opts);
+    } else if (onErr){ onErr(); }
+  }
+  function geoWatch(onOk){
+    if (CapGeo){ CapGeo.watchPosition({ enableHighAccuracy: true }, function(pos){ if (pos) onOk(pos); }); return true; }
+    if (navigator.geolocation){ return navigator.geolocation.watchPosition(function(pos){ onOk(pos); }, function(){}, { enableHighAccuracy: true }); }
+    return null;
+  }
+
   function startLocWatch(){
-    if (locWatchId !== null || !navigator.geolocation) return;
-    locWatchId = navigator.geolocation.watchPosition(
-      function(pos){ updateLocMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy); },
-      function(){ /* 取得失敗時は静かにスキップ（ボタン側でトースト済み） */ },
-      { enableHighAccuracy: true }
-    );
+    if (locWatchId !== null) return;
+    locWatchId = geoWatch(function(pos){ updateLocMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy); });
   }
 
   document.getElementById('locateBtn').addEventListener('click', function(){
-    if (!navigator.geolocation){ toast('この端末では現在地を取得できません'); return; }
+    if (!CapGeo && !navigator.geolocation){ toast('この端末では現在地を取得できません'); return; }
     toast('現在地を取得中…');
     startMapOrient();  // ユーザー操作起点でセンサー許可を要求（iOS）
-    navigator.geolocation.getCurrentPosition(
+    geoGetCurrent(
       function(pos){
         updateLocMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
         setObserver(pos.coords.latitude, pos.coords.longitude, true);
         startLocWatch();  // 以降は移動に自動追従
         toast('現在地に移動しました');
       },
-      function(){ toast('現在地を取得できませんでした'); },
-      { enableHighAccuracy: true, timeout: 8000 }
+      function(){ toast('現在地を取得できませんでした'); }
     );
   });
+
+  // ---------- アプリ情報ダイアログ（ソラミチをタップ） ----------
+  (function(){
+    var aboutBtn = document.getElementById('aboutBtn');
+    var about = document.getElementById('about');
+    var aboutClose = document.getElementById('aboutClose');
+    if (!aboutBtn || !about) return;
+    var closeTimer;
+    function openAbout(){
+      clearTimeout(closeTimer);
+      about.hidden = false;            // まず display:flex（中身は opacity:0 の初期状態で描画）
+      void about.offsetWidth;          // 初期状態を強制レイアウトで確定 → 同tickで .open を付けても入場トランジションが発火（rAF非依存）
+      about.classList.add('open');
+    }
+    function closeAbout(){
+      about.classList.remove('open');  // 退場トランジション開始
+      clearTimeout(closeTimer);
+      closeTimer = setTimeout(function(){            // 退場アニメ後に display:none へ
+        if (!about.classList.contains('open')) about.hidden = true;
+      }, 240);
+    }
+    aboutBtn.addEventListener('click', openAbout);
+    if (aboutClose) aboutClose.addEventListener('click', closeAbout);
+    about.addEventListener('click', function(e){ if (e.target === about) closeAbout(); }); // 背景タップで閉じる
+    var link = about.querySelector('a[target="_blank"]');
+    if (link) link.addEventListener('click', function(e){ e.preventDefault(); window.open(link.href, '_blank'); }); // 外部リンクはシステムブラウザで
+  })();
 
   // ---------- 地点検索（Nominatim / OpenStreetMap） ----------
   var searchBox = document.getElementById('searchBox');
@@ -868,11 +1014,24 @@
   // CSSのlvh/svh計算では持ち上げ量が不足する端末があるため、
   // visualViewportで「実際に見えている領域の下端」を測ってその上に配置する。
   var sheetEl = document.querySelector('.sheet');
+  var sabProbe;
+  function safeAreaBottom(){
+    if (!sabProbe){
+      sabProbe = document.createElement('div');
+      sabProbe.style.cssText = 'position:fixed;bottom:0;left:0;width:0;height:env(safe-area-inset-bottom);pointer-events:none;visibility:hidden;';
+      document.body.appendChild(sabProbe);
+    }
+    return sabProbe.offsetHeight;
+  }
   function fitBottomUI(){
     var vv = window.visualViewport;
     if (!vv) return;
     var visBottom = vv.offsetTop + vv.height; // レイアウトビューポート座標系での可視領域下端
-    visBottom -= (window.__bannerHeight || 0);  // ネイティブアプリの広告バナー分を持ち上げる
+    var banner = window.__bannerHeight || 0;
+    if (banner > 0){
+      // 広告バナーはホームインジケータのセーフエリア上に出るため、バナー高さ＋セーフエリア分を持ち上げる
+      visBottom -= (banner + safeAreaBottom());
+    }
     sheetEl.style.bottom = 'auto';
     sheetEl.style.top = Math.round(visBottom - sheetEl.offsetHeight - 12) + 'px';
     arStatus.style.bottom = 'auto';
@@ -891,6 +1050,16 @@
   // ---------- 起動 ----------
   setDate(new Date());
   setInterval(drawNow, 60000); // 現在の太陽は毎分更新
+
+  // 起動時に現在地を取得して中心に置く（許可された場合）。拒否・取得失敗時は既定/保存位置のまま。
+  geoGetCurrent(
+    function(pos){
+      updateLocMarker(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy);
+      setObserver(pos.coords.latitude, pos.coords.longitude, true); // 現在地へ移動
+      startLocWatch();  // 以降は移動に追従して青ドットを更新
+    },
+    function(){ /* 許可なし/取得失敗 → 既定または保存済みの位置のまま */ }
+  );
 
   // ---------- PWA: Service Worker 登録（ネイティブアプリでは不要） ----------
   if (!window.Capacitor && 'serviceWorker' in navigator &&
