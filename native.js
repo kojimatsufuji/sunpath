@@ -16,6 +16,7 @@
 
   var AdMob = null;
   var bannerListenerAdded = false;
+  var bannerShown = false;
 
   var noAdsBtn   = document.getElementById('noAdsBtn');
   var restoreBtn = document.getElementById('restoreBtn');
@@ -44,8 +45,10 @@
 
   function showBanner(){
     if (getNoAds()) return;
+    if (bannerShown) return;          // 二重表示を防ぐ
     var ad = resolveAdMob();
     if (!ad) return;
+    bannerShown = true;
     if (!bannerListenerAdded){
       ad.addListener('bannerAdSizeChanged', function(info){
         window.__bannerHeight = (info && info.height) ? info.height : 0;
@@ -65,6 +68,7 @@
       })
       .catch(function(err){
         // 広告が出せなくてもアプリ本体は動かす
+        bannerShown = false;          // 失敗したら再試行できるように戻す
         console.warn('AdMob init/show failed:', err);
       });
   }
@@ -77,6 +81,7 @@
         else if (ad.hideBanner) ad.hideBanner();
       } catch(e){ console.warn('removeBanner failed:', e); }
     }
+    bannerShown = false;
     window.__bannerHeight = 0;
     if (window.__refitBottomUI) window.__refitBottomUI();
   }
@@ -86,7 +91,7 @@
     setNoAds(true);
     removeBanner();
     if (noAdsBtn) noAdsBtn.hidden = true;
-    if (restoreBtn) restoreBtn.hidden = true;
+    // restoreBtn はソラミチ画面（情報ダイアログ）に常設のため、ここでは触らない
   }
 
   // ---- アプリ内課金（cordova-plugin-purchase / グローバル CdvPurchase）----
@@ -111,16 +116,14 @@
       platform: Platform.APPLE_APPSTORE
     }]);
 
-    function refreshOwnership(){
+    function isOwned(){
       var p = store.get(PRODUCT_ID, Platform.APPLE_APPSTORE);
-      if (p && p.owned) applyNoAds();
+      return !!(p && p.owned);
     }
 
-    // 検証バリデータ（自前サーバ）は持たないため、approved で finish する簡易構成。
-    store.when()
-      .approved(function(transaction){ transaction.finish(); })
-      .finished(function(){ refreshOwnership(); })
-      .receiptUpdated(function(){ refreshOwnership(); });
+    // 承認された取引は必ず finish して取引キューを空にする。
+    // ※広告除去はここでは行わない（キャンセル等の裏イベントで誤って広告を消さないため）。
+    store.when().approved(function(transaction){ transaction.finish(); });
 
     // 背景の読込エラー（オフライン等）はログのみ。ユーザー操作時のエラーは各ボタン側で扱う。
     store.error(function(err){ console.warn('IAP error:', err); });
@@ -129,8 +132,27 @@
       return res && ErrorCode && res.code === ErrorCode.PAYMENT_CANCELLED;
     }
 
+    // 購入/復元が「成立したときだけ」広告を消す（無言の applyNoAds に通知を添える）
+    function grantNoAds(){ applyNoAds(); toast('広告を削除しました'); }
+
+    // 「購入を復元」はソラミチ画面（情報ダイアログ）に常設。購入の有無に関わらず使えるよう一度だけ配線する。
+    if (restoreBtn){
+      restoreBtn.hidden = false;   // ネイティブでは表示（Webでは hidden のまま）
+      restoreBtn.onclick = function(){
+        toast('購入を復元しています…');
+        store.restorePurchases().then(function(res){
+          if (res && res.isError){
+            if (!isCancelled(res)) toast('復元できませんでした');
+            return;
+          }
+          if (isOwned()) grantNoAds();
+          else toast('復元できる購入がありませんでした');
+        });
+      };
+    }
+
+    // 下部パネルの「広告を削除」（未購入時のみ表示）
     function bindButtons(){
-      if (getNoAds()) return; // 購入済みなら出さない
       if (noAdsBtn){
         noAdsBtn.hidden = false;
         noAdsBtn.onclick = function(){
@@ -139,17 +161,12 @@
           if (!offer){ toast('商品情報を取得できませんでした'); return; }
           // store.order は Promise<IError|undefined> を返す（v13）
           store.order(offer).then(function(res){
-            if (res && res.isError && !isCancelled(res)) toast('購入できませんでした');
-          });
-        };
-      }
-      if (restoreBtn){
-        restoreBtn.hidden = false;
-        restoreBtn.onclick = function(){
-          toast('購入を復元しています…');
-          store.restorePurchases().then(function(res){
-            if (res && res.isError && !isCancelled(res)) toast('復元できませんでした');
-            else refreshOwnership();
+            if (res && res.isError){
+              // キャンセルは無言／失敗のみ通知。いずれも広告は消さず、ボタンも出したまま。
+              if (!isCancelled(res)) toast('購入できませんでした');
+              return;
+            }
+            grantNoAds();   // エラー無し＝購入成立
           });
         };
       }
@@ -158,9 +175,21 @@
       if (refit){ refit(); setTimeout(refit, 100); }
     }
 
+    // 起動時：所有 or 付与済み(noads)なら広告オフ、それ以外は広告とボタンを表示。
+    // ※起動直後は所有判定が間に合わないことがあるため、付与済みフラグは勝手に解除しない
+    //   （＝購入者に再起動のたび広告を出さない）。フラグは購入/復元の成立時にのみ立つ。
+    function syncUI(){
+      if (isOwned() || getNoAds()){
+        applyNoAds();          // 所有 or 付与済み → 広告除去・ボタン非表示・フラグ維持（無言）
+      } else {
+        showBanner();          // 未所有・未付与 → 広告表示
+        bindButtons();         // 購入／復元ボタンを表示
+      }
+    }
+
     store.initialize([Platform.APPLE_APPSTORE])
-      .then(function(){ return store.update(); })
-      .then(function(){ refreshOwnership(); bindButtons(); })
+      .then(function(){ return store.update(); })   // 受領書から確定状態を取得
+      .then(function(){ syncUI(); })
       .catch(function(e){ console.warn('store init failed:', e); });
   }
 

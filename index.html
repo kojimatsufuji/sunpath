@@ -77,21 +77,28 @@
   .about-row > span{ color:var(--sub); flex:none; }
   .about-row > b{ font-weight:600; }
   .about-row a{ color:var(--blue); text-decoration:none; word-break:break-all; }
+  /* ソラミチ画面の「購入を復元」（ネイティブで常設。Webでは hidden のまま） */
+  .about-restore{ display:block; width:100%; margin-top:26px; padding:13px;
+    border-radius:12px; border:1px solid var(--hairline); background:rgba(255,255,255,.06);
+    color:var(--text); font-size:15px; font-weight:600; cursor:pointer;
+    -webkit-tap-highlight-color:transparent; }
+  .about-restore[hidden]{ display:none; }
   /* 情報ダイアログの開閉トランジション（入場=ゆっくり＋スタッガー / 退場=速い）。
      既定（.open なし）に退場用の短い transition を置き、.open 側に入場用の長い transition＋遅延を上書きする。 */
   .about-body{ opacity:0; transform:scale(.96);
     transition:opacity .16s ease, transform .16s ease; }
   .about.open .about-body{ opacity:1; transform:none;
     transition:opacity .3s ease, transform .45s cubic-bezier(.16,1,.3,1); }
-  .about-icon, .about-name, .about-tag, .about-row, .about-x{
+  .about-icon, .about-name, .about-tag, .about-row, .about-restore, .about-x{
     opacity:0; transition:opacity .16s ease, transform .16s ease; }
   .about-icon{ transform:translateY(10px) scale(.84); }
-  .about-name, .about-tag, .about-row{ transform:translateY(12px); }
+  .about-name, .about-tag, .about-row, .about-restore{ transform:translateY(12px); }
   .about-x{ transform:scale(.8); }
   .about.open .about-icon,
   .about.open .about-name,
   .about.open .about-tag,
   .about.open .about-row,
+  .about.open .about-restore,
   .about.open .about-x{ opacity:1; transform:none; }
   /* 入場のスタッガー（中身が下から順にせり上がる）。アイコンは軽くオーバーシュートさせて“ポップ” */
   .about.open .about-icon{ transition:opacity .5s ease .06s, transform .6s cubic-bezier(.2,.8,.2,1.12) .06s; }
@@ -100,6 +107,7 @@
   .about.open .about-row:nth-child(4){ transition:opacity .45s ease .22s, transform .55s cubic-bezier(.16,1,.3,1) .22s; }
   .about.open .about-row:nth-child(5){ transition:opacity .45s ease .27s, transform .55s cubic-bezier(.16,1,.3,1) .27s; }
   .about.open .about-row:nth-child(6){ transition:opacity .45s ease .32s, transform .55s cubic-bezier(.16,1,.3,1) .32s; }
+  .about.open .about-restore{ transition:opacity .45s ease .37s, transform .55s cubic-bezier(.16,1,.3,1) .37s; }
   .about.open .about-x{ transition:opacity .4s ease .2s, transform .4s ease .2s; }
   @media (prefers-reduced-motion: reduce){
     .about, .about.open, .about-body, .about.open .about-body,
@@ -209,6 +217,12 @@
     background:var(--green); border:2.5px solid #fff;
     box-shadow:0 1px 6px rgba(0,0,0,.5);
   }
+  /* 軌跡アニメで弧に沿って移動する太陽の円（移動ヘッド） */
+  .sun-travel{
+    width:22px; height:22px; border-radius:50%;
+    background:var(--amber); border:2.5px solid #fff;
+    box-shadow:0 0 16px 6px rgba(255,176,32,.75);
+  }
   .obs-dot{
     width:16px; height:16px; border-radius:50%;
     background:#fff; border:3px solid rgba(17,18,22,.65);
@@ -255,7 +269,7 @@
 
   .toast{
     position:fixed; top:calc(env(safe-area-inset-top) + 64px); left:50%; transform:translateX(-50%);
-    z-index:1100; background:var(--panel); backdrop-filter:blur(16px);
+    z-index:3000; background:var(--panel); backdrop-filter:blur(16px);  /* ソラミチ画面(2000)・AR(2000)より前面に */
     border:1px solid var(--hairline); border-radius:999px;
     color:var(--text); font-size:12px; padding:9px 16px;
     opacity:0; transition:opacity .25s; pointer-events:none; white-space:nowrap;
@@ -334,7 +348,6 @@
     <div class="stat"><span class="lbl">マジックアワー 夕</span><span class="val" id="vGHpm">–</span></div>
   </div>
   <div class="noads-row">
-    <button id="restoreBtn" class="noads" hidden>購入を復元</button>
     <button id="noAdsBtn" class="noads" hidden>広告を削除</button>
   </div>
 </div>
@@ -347,9 +360,10 @@
     <img class="about-icon" src="icons/icon-192.png" alt="ソラミチ">
     <div class="about-name">ソラミチ</div>
     <div class="about-tag">太陽の軌跡マップ</div>
-    <div class="about-row"><span>バージョン</span><b id="aboutVer">1.0.1</b></div>
+    <div class="about-row"><span>バージョン</span><b id="aboutVer">1.0.2</b></div>
     <div class="about-row"><span>開発者</span><b>Koji Matsufuji</b></div>
     <div class="about-row"><span>サイト</span><a href="https://unigram.design" target="_blank" rel="noopener noreferrer">unigram.design</a></div>
+    <button id="restoreBtn" class="about-restore" hidden>購入を復元</button>
   </div>
 </div>
 
@@ -479,33 +493,114 @@
     return kind === 'summer' ? new Date(y, 5, 21) : new Date(y, 11, 21);
   }
 
-  // ---------- 軌跡の描画 ----------
-  function drawPath(baseDate, group, color, withHourMarkers){
-    group.clearLayers();
-    var pts = [];
+  // ---------- 軌跡の描画（アニメーション付き） ----------
+  // 軌跡（5分刻みの点列）と時刻マーカー（弧上での位置インデックス付き）を構築
+  function buildArc(baseDate){
+    var pts = [], markers = [];
     for (var m = 0; m < 1440; m += 5){
       var d = new Date(baseDate); d.setHours(0, m, 0, 0);
       var s = sunAt(d);
-      if (s.altitude > -0.6) pts.push(sunLatLng(s));
+      if (s.altitude > -0.6){
+        pts.push(sunLatLng(s));
+        if (m % 60 === 0 && s.altitude > 0){
+          markers.push({ idx: pts.length - 1, hour: m / 60, latlng: pts[pts.length - 1] });
+        }
+      }
     }
-    if (pts.length < 2) return; // 太陽が昇らない日
-    if (withHourMarkers){
-      L.polyline(pts, { color: color, weight: 2.5, opacity: 0.95 }).addTo(group);
-    } else {
-      // 夏至・冬至の破線: 航空写真上で沈まないよう、暗色の縁取りを下に敷く
-      L.polyline(pts, { color: '#0b0c0f', weight: 5.5, opacity: 0.55, dashArray: '6 8' }).addTo(group);
-      L.polyline(pts, { color: color, weight: 2.5, opacity: 1, dashArray: '6 8' }).addTo(group);
+    return { pts: pts, markers: markers };
+  }
+
+  // 軌跡アニメの速度（ms）。小さいほど速い。
+  var ANIM_DUR = 600;
+  // ease-out の強さ（最初速く→最後ゆっくり）。大きいほど終盤の減速が強い（4=強）
+  var EASE_POW = 4;
+
+  // 最初速く・最後ゆっくり（ease-out）。EASE_POW で減速の強さを調整
+  function easeOut(t){ return 1 - Math.pow(1 - t, EASE_POW); }
+
+  // 軌跡を「日の出側→日の入側へ描かれていく」アニメで表示。
+  // document.hidden（プレビューの非表示タブ・バックグラウンド）では即座に最終状態にする。
+  function animateArc(group, arc, dur, makeDrawer){
+    group.clearLayers();
+    if (arc.pts.length < 2) return;                 // 太陽が昇らない日
+    group._anim = (group._anim || 0) + 1;
+    var myAnim = group._anim;
+    var drawer = makeDrawer(group, arc);
+    if (document.hidden){ drawer.set(1); return; }  // 非表示時は即時に最終状態
+    var start = null;
+    function step(ts){
+      if (group._anim !== myAnim) return;           // 後発のredrawに置き換えられたら停止
+      if (start === null) start = ts;
+      var t = Math.min(1, (ts - start) / dur);
+      drawer.set(t < 1 ? easeOut(t) : 1);
+      if (t < 1) requestAnimationFrame(step);
     }
-    if (!withHourMarkers) return;
-    for (var h = 0; h < 24; h++){
-      var hd = new Date(baseDate); hd.setHours(h, 0, 0, 0);
-      var hs = sunAt(hd);
-      if (hs.altitude <= 0) continue;
-      L.marker(sunLatLng(hs), {
-        interactive: false,
-        icon: L.divIcon({ className:'', html:'<div class="hour-dot">'+h+'</div>', iconSize:[24,24], iconAnchor:[12,12] })
-      }).addTo(group);
-    }
+    requestAnimationFrame(step);
+  }
+
+  // 移動する太陽の円（グロー付き・色は引数で指定）のアイコンを作る
+  function glowOf(hex){ var c = hex.replace('#',''); return 'rgba('+parseInt(c.slice(0,2),16)+','+parseInt(c.slice(2,4),16)+','+parseInt(c.slice(4,6),16)+',.75)'; }
+  function travelIcon(color){
+    return L.divIcon({ className:'', html:'<div class="sun-travel" style="background:'+color+';box-shadow:0 0 16px 6px '+glowOf(color)+'"></div>', iconSize:[22,22], iconAnchor:[11,11] });
+  }
+
+  // 今日の軌跡：グロー付きの太陽の円が弧に沿って日の出側→日の入側へ滑らかに移動し、
+  // 後ろに線が引かれ、通過した時刻マーカーがトレイルとして残る（動画と同じ動き）。
+  function makeTodayDrawer(color){
+    return function(group, arc){
+      var animating = !document.hidden;            // 表示中のみ移動アニメ（非表示は即時最終状態）
+      var poly = L.polyline([], { color: color, weight: 2.5, opacity: 0.95 }).addTo(group);
+      var added = 0;
+      var head = animating ? L.marker(arc.pts[0], { interactive: false, zIndexOffset: 1000,
+        icon: travelIcon(color) }).addTo(group) : null;
+      function placeMarkers(n){
+        while (added < arc.markers.length && arc.markers[added].idx < n){
+          var mk = arc.markers[added++];
+          var m = L.marker(mk.latlng, { interactive: false,
+            icon: L.divIcon({ className:'', html:'<div class="hour-dot">'+mk.hour+'</div>', iconSize:[24,24], iconAnchor:[12,12] }) }).addTo(group);
+          if (animating){
+            var root = m.getElement(); var el = root && root.querySelector('.hour-dot');
+            if (el){
+              el.style.opacity = '0'; el.style.transition = 'opacity .3s ease';
+              (function(e){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ e.style.opacity = '1'; }); }); })(el);
+            }
+          }
+        }
+      }
+      return { set: function(t){
+        var n = Math.max(2, Math.round(arc.pts.length * t));
+        poly.setLatLngs(arc.pts.slice(0, n));      // 線が移動ヘッドの後ろに引かれる
+        if (head) head.setLatLng(arc.pts[n - 1]);  // 太陽の円が弧に沿って移動
+        placeMarkers(n);                            // 通過した時刻マーカーをトレイルとして残す
+        if (t >= 1 && head){                        // 到達したら移動ヘッドはフェードアウトして消す
+          var hr = head; head = null;
+          var rootEl = hr.getElement(); var he = rootEl && rootEl.querySelector('.sun-travel');
+          if (he){ he.style.transition = 'opacity .35s ease'; he.style.opacity = '0'; setTimeout(function(){ group.removeLayer(hr); }, 420); }
+          else group.removeLayer(hr);
+        }
+      }};
+    };
+  }
+
+  // 夏至・冬至：その色（夏至=赤／冬至=青）の太陽の円が破線に沿って移動し、後ろに破線（暗色ケーシング＋色線）が伸びる
+  function makeDashedDrawer(color){
+    return function(group, arc){
+      var animating = !document.hidden;
+      var casing = L.polyline([], { color: '#0b0c0f', weight: 5.5, opacity: 0.55, dashArray: '6 8' }).addTo(group);
+      var line   = L.polyline([], { color: color, weight: 2.5, opacity: 1, dashArray: '6 8' }).addTo(group);
+      var head = animating ? L.marker(arc.pts[0], { interactive: false, zIndexOffset: 1000, icon: travelIcon(color) }).addTo(group) : null;
+      return { set: function(t){
+        var n = Math.max(2, Math.round(arc.pts.length * t));
+        var sub = arc.pts.slice(0, n); casing.setLatLngs(sub); line.setLatLngs(sub);
+        if (head) head.setLatLng(arc.pts[n - 1]);
+        if (t >= 1 && head){
+          var hr = head; head = null;
+          var rootEl = hr.getElement(); var he = rootEl && rootEl.querySelector('.sun-travel');
+          if (he){ he.style.transition = 'opacity .35s ease'; he.style.opacity = '0'; setTimeout(function(){ group.removeLayer(hr); }, 420); }
+          else group.removeLayer(hr);
+        }
+      }};
+    };
   }
 
   // 現在の太陽（方位線＋緑マーカー）— 選択日に関係なく「実際の今」を表示
@@ -527,11 +622,21 @@
     }
   }
 
-  // ---------- 全体更新 ----------
+  // ---------- 単一グループの描画／アニメ（トグルや再描画で使う） ----------
+  // k のグループだけを描き直す。他のグループには一切触れない（再アニメさせない）。
+  function drawGroup(k){
+    if (k === 'today'){
+      if (state.show.today)  animateArc(groups.today,  buildArc(state.date),             ANIM_DUR, makeTodayDrawer('#FFB020'));  else groups.today.clearLayers();
+    } else if (k === 'summer'){
+      if (state.show.summer) animateArc(groups.summer, buildArc(solsticeDate('summer')), ANIM_DUR, makeDashedDrawer('#FF6B6B')); else groups.summer.clearLayers();
+    } else if (k === 'winter'){
+      if (state.show.winter) animateArc(groups.winter, buildArc(solsticeDate('winter')), ANIM_DUR, makeDashedDrawer('#4DA3FF')); else groups.winter.clearLayers();
+    }
+  }
+
+  // ---------- 全体更新（日付・観測点の変更時：表示中の軌跡をすべて描き直す） ----------
   function redraw(){
-    if (state.show.today)  drawPath(state.date, groups.today, '#FFB020', true);  else groups.today.clearLayers();
-    if (state.show.summer) drawPath(solsticeDate('summer'), groups.summer, '#FF6B6B', false); else groups.summer.clearLayers();
-    if (state.show.winter) drawPath(solsticeDate('winter'), groups.winter, '#4DA3FF', false); else groups.winter.clearLayers();
+    drawGroup('today'); drawGroup('summer'); drawGroup('winter');
     drawNow();
 
     var t = SunCalc.getTimes(dateAtNoon(state.date), state.obs.lat, state.obs.lng);
@@ -568,7 +673,7 @@
     chip.addEventListener('click', function(){
       state.show[k] = !state.show[k];
       chip.classList.toggle('on', state.show[k]);
-      redraw();
+      drawGroup(k);   // 押したものだけ描画／消去。他は再アニメさせない
       save();
     });
   });
