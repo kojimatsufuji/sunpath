@@ -37,28 +37,29 @@
     pointer-events:none;
   }
   .topbar > *{ pointer-events:auto; }
-  /* 案G「シネ・インストゥルメント」：円形ガラスのアイコンボタン（検索・地図切替・現在地・AR） */
+  /* 案G「シネ・インストゥルメント」：円形ガラスのアイコンボタン（検索・地図切替・現在地・AR）
+     背景が衛星写真（暗い）でも標準地図（明るい）でも視認できるよう、常に暗めのガラス地にする */
   .pill{
     width:34px; height:34px; border-radius:50%; flex:none;
     display:flex; align-items:center; justify-content:center;
-    background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.03));
+    background:linear-gradient(180deg, rgba(22,24,30,.62), rgba(9,10,14,.62));
     border:1px solid rgba(255,255,255,.16);
-    box-shadow:0 8px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);
-    backdrop-filter:blur(12px) saturate(150%); -webkit-backdrop-filter:blur(12px) saturate(150%);
-    color:#EDE7DB; font-size:10px; font-weight:700; letter-spacing:.06em;
+    box-shadow:0 8px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.16);
+    backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%);
+    color:#F4F0E6; font-size:10px; font-weight:700; letter-spacing:.06em;
     cursor:pointer; user-select:none;
   }
   .pill svg{ width:15px; height:15px; display:block; }
   .pill.wide{ width:auto; padding:0 16px; border-radius:999px; font-size:11px; }
-  button.pill:active{ filter:brightness(.82); }
+  button.pill:active{ filter:brightness(1.3); }
   /* ブランド（ソラミチ）ボタン：ガラスのピル＋光る太陽ドット。タップで情報ダイアログを開く */
   .brand{
     display:inline-flex; align-items:center; gap:7px;
-    background:linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.04));
+    background:linear-gradient(180deg, rgba(22,24,30,.62), rgba(9,10,14,.62));
     border:1px solid rgba(255,255,255,.18); border-radius:999px;
     color:#F8F5EE; font-weight:700; letter-spacing:.06em; font-size:12px; line-height:1;
     padding:8px 14px 8px 12px; cursor:pointer; user-select:none;
-    box-shadow:0 8px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);
+    box-shadow:0 8px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.16);
     backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%);
     text-shadow:0 1px 4px rgba(0,0,0,.5);
   }
@@ -260,7 +261,11 @@
   .deck-scan{ position:absolute; top:-4px; bottom:-4px; width:3px; border-radius:2px; transform:translateX(-50%);
     background:linear-gradient(180deg,#EAFFF3,#4ADE80);
     box-shadow:0 0 12px 4px rgba(74,222,128,.85); opacity:0; left:0; }
-  .deck-ruler{ display:flex; justify-content:space-between; margin:0 2px 14px; font-size:9px; letter-spacing:.1em; color:rgba(255,255,255,.36); }
+  .deck-ruler{ display:flex; justify-content:space-between; margin:0 1px 14px; font-size:7.5px; letter-spacing:0; color:rgba(255,255,255,.36); }
+  .deck-ruler span{ flex:1; text-align:center; }
+  .deck-ruler span:first-child{ text-align:left; }
+  .deck-ruler span:last-child{ text-align:right; }
+  .deck-ruler span.maj{ color:rgba(255,255,255,.56); font-weight:600; }
 
   .deck-keytimes{ display:flex; justify-content:space-between; padding:0 2px; }
   .deck-kt{ display:flex; flex-direction:column; gap:2px; }
@@ -441,7 +446,7 @@
     <div class="deck-playhead" id="deckPlayhead"></div>
     <div class="deck-scan" id="deckScan"></div>
   </div>
-  <div class="deck-ruler din"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
+  <div class="deck-ruler din"><span class="maj">0</span><span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span class="maj">6</span><span>7</span><span>8</span><span>9</span><span>10</span><span>11</span><span class="maj">12</span><span>13</span><span>14</span><span>15</span><span>16</span><span>17</span><span class="maj">18</span><span>19</span><span>20</span><span>21</span><span>22</span><span>23</span><span class="maj">24</span></div>
 
   <div class="deck-keytimes">
     <div class="deck-kt"><span class="deck-kl">日の出</span><span class="deck-kv din" id="vSunrise">–</span></div>
