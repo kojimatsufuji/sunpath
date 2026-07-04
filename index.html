@@ -37,24 +37,36 @@
     pointer-events:none;
   }
   .topbar > *{ pointer-events:auto; }
+  /* 案G「シネ・インストゥルメント」：円形ガラスのアイコンボタン（検索・地図切替・現在地・AR） */
   .pill{
-    background:var(--panel); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
-    border:1px solid var(--hairline); border-radius:999px;
-    color:var(--text); font-size:13px; line-height:1;
-    padding:11px 16px; cursor:pointer; user-select:none;
+    width:34px; height:34px; border-radius:50%; flex:none;
+    display:flex; align-items:center; justify-content:center;
+    background:linear-gradient(180deg, rgba(255,255,255,.12), rgba(255,255,255,.03));
+    border:1px solid rgba(255,255,255,.16);
+    box-shadow:0 8px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);
+    backdrop-filter:blur(12px) saturate(150%); -webkit-backdrop-filter:blur(12px) saturate(150%);
+    color:#EDE7DB; font-size:10px; font-weight:700; letter-spacing:.06em;
+    cursor:pointer; user-select:none;
   }
-  /* ブランド（ソラミチ）ボタン：他のアクション(.pill)と差別化。アンバーの枠＋太陽ドット＋情報ダイアログを開く */
+  .pill svg{ width:15px; height:15px; display:block; }
+  .pill.wide{ width:auto; padding:0 16px; border-radius:999px; font-size:11px; }
+  button.pill:active{ filter:brightness(.82); }
+  /* ブランド（ソラミチ）ボタン：ガラスのピル＋光る太陽ドット。タップで情報ダイアログを開く */
   .brand{
     display:inline-flex; align-items:center; gap:7px;
-    background:var(--panel); backdrop-filter:blur(18px); -webkit-backdrop-filter:blur(18px);
-    border:1px solid rgba(255,176,32,.55); border-radius:999px;
-    color:var(--text); font-weight:700; letter-spacing:.1em; font-size:13px; line-height:1;
-    padding:10px 15px; cursor:pointer; user-select:none;
+    background:linear-gradient(180deg, rgba(255,255,255,.13), rgba(255,255,255,.04));
+    border:1px solid rgba(255,255,255,.18); border-radius:999px;
+    color:#F8F5EE; font-weight:700; letter-spacing:.06em; font-size:12px; line-height:1;
+    padding:8px 14px 8px 12px; cursor:pointer; user-select:none;
+    box-shadow:0 8px 20px rgba(0,0,0,.4), inset 0 1px 0 rgba(255,255,255,.2);
+    backdrop-filter:blur(14px) saturate(150%); -webkit-backdrop-filter:blur(14px) saturate(150%);
+    text-shadow:0 1px 4px rgba(0,0,0,.5);
   }
-  .brand .brand-dot{ width:9px; height:9px; border-radius:50%; background:var(--amber); box-shadow:0 0 8px rgba(255,176,32,.85); flex:none; }
-  .brand:active{ background:rgba(40,42,50,.9); }
-  .top-actions{ display:flex; gap:8px; }
-  button.pill:active{ background:rgba(40,42,50,.9); }
+  .brand .brand-dot{ width:6px; height:6px; border-radius:50%;
+    background:radial-gradient(circle at 35% 30%, #FFE2A6, #FFB020 70%);
+    box-shadow:0 0 6px rgba(255,176,32,.9), 0 0 14px rgba(255,176,32,.45); flex:none; }
+  .brand:active{ filter:brightness(.82); }
+  .top-actions{ display:flex; align-items:center; gap:8px; }
 
   /* アプリ情報の全画面ダイアログ */
   .about{ position:fixed; inset:0; z-index:2000; background:rgba(8,9,12,.97);
@@ -150,71 +162,121 @@
        ツールバー表示中は (100lvh - 100svh) 分だけ持ち上げて常に見える位置に置く */
     bottom: calc(100lvh - 100svh + env(safe-area-inset-bottom) + 12px);
     z-index:1000; max-width:520px; margin:0 auto;
-    background:var(--panel); backdrop-filter:blur(20px); -webkit-backdrop-filter:blur(20px);
-    border:1px solid var(--hairline); border-radius:20px;
+    background:linear-gradient(176deg, rgba(20,23,32,.76) 0%, rgba(7,9,14,.91) 100%);
+    backdrop-filter:blur(20px) saturate(155%); -webkit-backdrop-filter:blur(20px) saturate(155%);
+    border:1px solid rgba(255,255,255,.10); border-radius:22px;
+    box-shadow:0 24px 58px rgba(0,0,0,.55), 0 4px 12px rgba(0,0,0,.4);
     padding:14px 16px; color:var(--text);
     color-scheme: dark;
+  }
+  .sheet::before{
+    content:""; position:absolute; left:16px; right:16px; top:0; height:1px;
+    background:linear-gradient(90deg, rgba(255,255,255,0), rgba(255,255,255,.22) 30%, rgba(255,255,255,.22) 70%, rgba(255,255,255,0));
   }
   .row{ display:flex; align-items:center; gap:8px; }
   .row + .row{ margin-top:12px; }
 
   .chip{
-    display:inline-flex; align-items:center; gap:7px;
-    background:transparent; border:1px solid var(--hairline); border-radius:999px;
-    color:var(--sub); font-size:12px; padding:8px 13px; cursor:pointer;
+    display:inline-flex; align-items:center; gap:5px;
+    background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.01));
+    border:1px solid rgba(255,255,255,.11); border-radius:999px;
+    color:rgba(255,255,255,.6); font-size:11px; letter-spacing:.02em; white-space:nowrap;
+    padding:8px 13px; cursor:pointer; user-select:none;
   }
-  .chip i{ width:8px; height:8px; border-radius:50%; background:var(--c); opacity:.35; }
-  .chip.on{ color:var(--text); border-color:rgba(255,255,255,.22); background:rgba(255,255,255,.06); }
-  .chip.on i{ opacity:1; }
+  .chip i{ width:6px; height:6px; border-radius:50%; background:var(--c); opacity:.55; }
+  .chip.on{
+    color:#FFF3E0; border-color:var(--c);
+    background:linear-gradient(180deg, var(--cg), transparent);
+    box-shadow:0 0 14px var(--cg), inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  .chip.on i{ opacity:1; box-shadow:0 0 5px var(--c); }
 
   .daterow{ justify-content:space-between; }
   .stepper{ display:flex; gap:6px; align-items:center; flex:1; }
   .step-btn{
-    width:34px; height:34px; border-radius:10px; border:1px solid var(--hairline);
-    background:transparent; color:var(--text); font-size:16px; cursor:pointer; line-height:1;
+    width:26px; height:26px; border-radius:50%; flex:none;
+    border:1px solid rgba(255,255,255,.16);
+    background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+    color:rgba(255,255,255,.68); font-size:13px; line-height:24px; text-align:center; cursor:pointer;
   }
+  .step-btn:active{ filter:brightness(1.4); }
   .datewrap{
     position:relative; flex:1 1 0px; width:0; min-width:0; display:flex;
   }
   /* 表示は自前のテキスト（日付＋曜日を並べられる）。日付部品は透明で上に重ね、タップでカレンダーを開く */
   .datedisp{
     flex:1 1 0px; width:0; min-width:0;
-    border:1px solid var(--hairline); border-radius:10px;
-    color:var(--text); font-size:13px; text-align:center;
-    padding:8px 10px; font-variant-numeric:tabular-nums; white-space:nowrap;
-    overflow:hidden;
+    border:1px solid rgba(255,255,255,.14); border-radius:999px;
+    background:linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.01));
+    color:#F4EEE3; font-size:14px; font-weight:600; text-align:center;
+    padding:7px 10px; font-variant-numeric:tabular-nums; letter-spacing:.02em; white-space:nowrap;
+    overflow:hidden; font-family:"DIN Alternate", -apple-system, sans-serif;
   }
-  .datedisp .dow{ color:var(--sub); margin-left:6px; }
+  .datedisp .dow{ color:rgba(255,214,150,.85); margin-left:6px; font-size:11px; font-weight:500; font-family:-apple-system,"Hiragino Sans",sans-serif; }
   input[type="date"]{
     position:absolute; inset:0; width:100%; height:100%;
     opacity:0; -webkit-appearance:none; appearance:none;
     border:0; margin:0; padding:0; font:inherit;
   }
   .today-btn{
-    border:none; background:rgba(255,255,255,.08); color:var(--text);
-    border-radius:10px; font-size:12px; padding:9px 12px; cursor:pointer;
+    border:1px solid rgba(255,255,255,.16);
+    background:linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0));
+    color:rgba(255,255,255,.78); font-size:11px; font-weight:600; letter-spacing:.02em;
+    border-radius:999px; padding:8px 13px; cursor:pointer;
     flex-shrink:0;
   }
+  .today-btn:active{ filter:brightness(1.4); }
   .sheet{ overflow:hidden; }  /* 万一のはみ出しは角丸内でクリップ */
 
-  .stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:8px; }
-  .stats.cols2{ grid-template-columns:repeat(2,1fr); }
-  .stat .lbl{ display:block; font-size:10px; color:var(--sub); letter-spacing:.06em; margin-bottom:3px; }
-  .stat .val{ display:block; font-size:14px; font-weight:600; font-variant-numeric:tabular-nums; white-space:nowrap; }
-  .stat .val small{ font-size:10px; font-weight:400; color:var(--sub); }
+  /* ---- 下部デッキ 新要素（タイムコード・方位高度・24hバー・主要3時刻） ---- */
+  .din{ font-family:"DIN Alternate", -apple-system, sans-serif; font-variant-numeric:tabular-nums; letter-spacing:.02em; }
+  .deck-divider{ height:1px; margin:13px 0 12px; background:var(--hairline); }
+  .deck-top{ display:flex; flex-direction:column; gap:9px; margin-bottom:14px; }
+  .deck-tc{ display:flex; align-items:baseline; gap:10px; flex-wrap:wrap; }
+  .deck-tcnum{ font-size:22px; font-weight:700; line-height:1; color:var(--text); text-shadow:0 0 18px rgba(255,190,90,.2); }
+  .deck-tcst{ font-size:11px; color:var(--sub); }
+  .deck-tcaz{ margin-left:auto; font-size:11px; color:rgba(255,255,255,.55); white-space:nowrap; }
+  .deck-mh{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+  .deck-mhk{ display:inline-flex; align-items:center; gap:5px; font-size:9px; letter-spacing:.1em; color:rgba(255,196,107,.85); }
+  .deck-mhk i{ width:5px; height:5px; border-radius:50%; background:var(--amber); box-shadow:0 0 4px 1px rgba(255,190,80,.9); }
+  .deck-mhv{ font-size:11.5px; font-weight:600; color:#FFC46B; }
+  .deck-mhv em{ font-style:normal; font-size:9px; font-weight:500; color:rgba(255,220,170,.65); margin-right:3px; }
+
+  .deck-band{ position:relative; height:26px; margin:0 0 6px; border-radius:7px; overflow:hidden;
+    background:linear-gradient(90deg,
+      #05070B 0%, #0B0F18 12%, #6E3560 18%, #E8A45A 20.6%, #D9C79B 24%,
+      #C7D4DC 40%, #E7EEF3 49%, #D3C6A4 58%, #ED8F3E 76.7%, #472247 84%, #05070B 100%);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.2), inset 0 -8px 14px rgba(0,0,0,.4); }
+  .deck-seg{ position:absolute; top:0; bottom:0; border-radius:3px;
+    background:linear-gradient(180deg, rgba(255,214,130,.55), rgba(255,176,32,.28));
+    box-shadow:0 0 6px 1px rgba(255,196,90,.85), 0 0 16px 4px rgba(255,176,32,.4); opacity:0; }
+  .deck-mark{ position:absolute; top:-4px; bottom:-4px; width:1.5px; border-radius:1px; transform:translateX(-50%); opacity:0; }
+  .deck-mark.sr{ background:#FFC46B; box-shadow:0 0 6px rgba(255,196,107,.9); }
+  .deck-mark.nn{ background:rgba(240,247,252,.95); box-shadow:0 0 6px rgba(234,242,247,.8); }
+  .deck-mark.ss{ background:#FF9840; box-shadow:0 0 6px rgba(255,152,64,.9); }
+  .deck-playhead{ position:absolute; top:-9px; bottom:-7px; width:2.2px; border-radius:1px; transform:translateX(-50%);
+    background:linear-gradient(180deg,#B7FFD6,#4ADE80);
+    box-shadow:0 0 6px 1.5px rgba(74,222,128,1), 0 0 16px 5px rgba(74,222,128,.6); opacity:0; }
+  .deck-scan{ position:absolute; top:-4px; bottom:-4px; width:3px; border-radius:2px; transform:translateX(-50%);
+    background:linear-gradient(180deg,#EAFFF3,#4ADE80);
+    box-shadow:0 0 12px 4px rgba(74,222,128,.85); opacity:0; left:0; }
+  .deck-ruler{ display:flex; justify-content:space-between; margin:0 2px 14px; font-size:9px; letter-spacing:.1em; color:rgba(255,255,255,.36); }
+
+  .deck-keytimes{ display:flex; justify-content:space-between; padding:0 2px; }
+  .deck-kt{ display:flex; flex-direction:column; gap:2px; }
+  .deck-kt.mid{ text-align:center; align-items:center; }
+  .deck-kt.end{ text-align:right; align-items:flex-end; }
+  .deck-kl{ font-size:9px; letter-spacing:.1em; color:var(--sub); }
+  .deck-kv{ font-size:19px; font-weight:700; color:var(--text); }
 
   /* ---- 地図上のマーカー ---- */
+  /* 時刻アイコン：背景色は時間帯ごとにJSでインライン指定（朝=ピンク〜昼=クリーム〜夕=オレンジ） */
   .hour-dot{
     width:24px; height:24px; border-radius:50%;
-    background:var(--amber); color:#231a05;
+    background:var(--amber); color:#2A1607;
     font-size:11px; font-weight:700;
     display:flex; align-items:center; justify-content:center;
     border:1.5px solid rgba(255,255,255,.9);
-    box-shadow:0 1px 6px rgba(0,0,0,.5);
-  }
-  .now-dot{
-    width:15px; height:15px; border-radius:50%;
-    background:var(--green); border:2.5px solid #fff;
     box-shadow:0 1px 6px rgba(0,0,0,.5);
   }
   /* 軌跡アニメで弧に沿って移動する太陽の円（移動ヘッド） */
@@ -223,6 +285,8 @@
     background:var(--amber); border:2.5px solid #fff;
     box-shadow:0 0 16px 6px rgba(255,176,32,.75);
   }
+  /* 現在の太陽アイコン（方位線の先端。光条付き。drawNow()がインラインSVGで生成） */
+  .now-sun{ width:26px; height:26px; overflow:visible; }
   .obs-dot{
     width:16px; height:16px; border-radius:50%;
     background:#fff; border:3px solid rgba(17,18,22,.65);
@@ -291,14 +355,16 @@
   @media (max-width: 520px){
     .topbar{ padding-left:8px; padding-right:8px; }
     .top-actions{ gap:5px; }
-    .pill{ padding:9px 11px; font-size:12px; }
-    .brand{ font-size:11px; letter-spacing:.06em; padding:10px 11px; }
+    .pill{ width:30px; height:30px; }
+    .pill svg{ width:13px; height:13px; }
+    .pill.wide{ width:auto; padding:0 13px; }
+    .brand{ font-size:11px; letter-spacing:.04em; padding:7px 11px 7px 10px; }
     .sheet{ padding:12px; left:10px; right:10px; }
     .row + .row{ margin-top:10px; }
     .stepper{ gap:4px; }
-    .step-btn{ width:28px; height:32px; font-size:14px; }
-    .datedisp{ font-size:12px; padding:8px 4px; }
-    .today-btn{ padding:8px 9px; font-size:11px; }
+    .step-btn{ width:24px; height:24px; font-size:12px; line-height:22px; }
+    .datedisp{ font-size:12px; padding:7px 6px; }
+    .today-btn{ padding:7px 10px; font-size:10.5px; }
   }
 </style>
 </head>
@@ -308,10 +374,26 @@
 <header class="topbar">
   <button class="brand" id="aboutBtn" aria-label="アプリ情報"><span class="brand-dot"></span>ソラミチ</button>
   <div class="top-actions">
-    <button class="pill" id="searchBtn">検索</button>
-    <button class="pill" id="layerBtn">地図</button>
-    <button class="pill" id="locateBtn">現在地</button>
-    <button class="pill" id="arBtn">AR</button>
+    <button class="pill" id="searchBtn" aria-label="場所を検索">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.4"/><path d="M10.4 10.4 14 14"/></svg>
+    </button>
+    <button class="pill" id="layerBtn" aria-label="地図の種類を切り替え">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round" stroke-linecap="round">
+        <path d="M8 2 L13.5 5 L8 8 L2.5 5 Z"/>
+        <path d="M2.5 8.3 L8 11.3 L13.5 8.3"/>
+        <path d="M2.5 11.3 L8 14.3 L13.5 11.3"/>
+      </svg>
+    </button>
+    <button class="pill" id="locateBtn" aria-label="現在地へ移動">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+        <circle cx="8" cy="8" r="2.1" fill="currentColor" stroke="none"/>
+        <line x1="8" y1="1" x2="8" y2="3.2"/>
+        <line x1="8" y1="12.8" x2="8" y2="15"/>
+        <line x1="1" y1="8" x2="3.2" y2="8"/>
+        <line x1="12.8" y1="8" x2="15" y2="8"/>
+      </svg>
+    </button>
+    <button class="pill" id="arBtn" aria-label="ARで見る">AR</button>
   </div>
 </header>
 
@@ -322,9 +404,9 @@
 
 <div class="sheet">
   <div class="row">
-    <button class="chip" data-k="today"  style="--c:var(--amber)"><i></i>今日</button>
-    <button class="chip" data-k="summer" style="--c:var(--red)"><i></i>夏至</button>
-    <button class="chip" data-k="winter" style="--c:var(--blue)"><i></i>冬至</button>
+    <button class="chip" data-k="today"  style="--c:var(--amber); --cg:rgba(255,176,32,.22)"><i></i>今日</button>
+    <button class="chip" data-k="summer" style="--c:var(--red); --cg:rgba(255,107,107,.22)"><i></i>夏至</button>
+    <button class="chip" data-k="winter" style="--c:var(--blue); --cg:rgba(77,163,255,.22)"><i></i>冬至</button>
   </div>
   <div class="row daterow">
     <div class="stepper">
@@ -337,15 +419,34 @@
     </div>
     <button class="today-btn" id="todayBtn">今日へ</button>
   </div>
-  <div class="row stats">
-    <div class="stat"><span class="lbl">日の出</span><span class="val" id="vSunrise">–</span></div>
-    <div class="stat"><span class="lbl">南中</span><span class="val" id="vNoon">–</span></div>
-    <div class="stat"><span class="lbl">日の入</span><span class="val" id="vSunset">–</span></div>
-    <div class="stat"><span class="lbl">現在の太陽</span><span class="val" id="vNow">–</span></div>
+
+  <div class="deck-divider"></div>
+
+  <div class="deck-top">
+    <div class="deck-tc">
+      <span class="deck-tcnum din" id="tcNum">–:–</span>
+      <span class="deck-tcst" id="tcStatus">–</span>
+      <span class="deck-tcaz din" id="vNow">–</span>
+    </div>
+    <div class="deck-mh">
+      <span class="deck-mhk"><i></i>マジックアワー</span>
+      <span class="deck-mhv din"><em>朝</em><span id="vGHam">–</span></span>
+      <span class="deck-mhv din"><em>夕</em><span id="vGHpm">–</span></span>
+    </div>
   </div>
-  <div class="row stats cols2">
-    <div class="stat"><span class="lbl">マジックアワー 朝</span><span class="val" id="vGHam">–</span></div>
-    <div class="stat"><span class="lbl">マジックアワー 夕</span><span class="val" id="vGHpm">–</span></div>
+
+  <div class="deck-band" id="deckBand">
+    <i class="deck-seg" id="segAM"></i><i class="deck-seg" id="segPM"></i>
+    <i class="deck-mark sr" id="markSR"></i><i class="deck-mark nn" id="markNN"></i><i class="deck-mark ss" id="markSS"></i>
+    <div class="deck-playhead" id="deckPlayhead"></div>
+    <div class="deck-scan" id="deckScan"></div>
+  </div>
+  <div class="deck-ruler din"><span>0</span><span>6</span><span>12</span><span>18</span><span>24</span></div>
+
+  <div class="deck-keytimes">
+    <div class="deck-kt"><span class="deck-kl">日の出</span><span class="deck-kv din" id="vSunrise">–</span></div>
+    <div class="deck-kt mid"><span class="deck-kl">南中</span><span class="deck-kv din" id="vNoon">–</span></div>
+    <div class="deck-kt end"><span class="deck-kl">日の入</span><span class="deck-kv din" id="vSunset">–</span></div>
   </div>
   <div class="noads-row">
     <button id="noAdsBtn" class="noads" hidden>広告を削除</button>
@@ -370,7 +471,7 @@
 <div id="arView" hidden>
   <video id="arVideo" playsinline autoplay muted></video>
   <canvas id="arCanvas"></canvas>
-  <button class="pill" id="arExitBtn">MAP</button>
+  <button class="pill wide" id="arExitBtn">MAP</button>
   <div class="ar-status" id="arStatus">コンパス待機中…</div>
 </div>
 
@@ -456,6 +557,58 @@
     setObserver(p.lat, p.lng, false);
   });
   map.on('click', function(e){ setObserver(e.latlng.lat, e.latlng.lng, false); });
+
+  // ---------- 暖色グラデーション（時刻アイコン・軌跡線・現在方位線で使う） ----------
+  function hexLerp(c1, c2, t){
+    function h2n(h){ return [parseInt(h.slice(1,3),16), parseInt(h.slice(3,5),16), parseInt(h.slice(5,7),16)]; }
+    var a = h2n(c1), b = h2n(c2);
+    var r = a.map(function(v, i){ return Math.round(v + (b[i] - v) * t); });
+    return '#' + r.map(function(v){ return ('0' + v.toString(16)).slice(-2); }).join('');
+  }
+  // 時刻(0-23の小数)→暖色。朝=ソフトピンク→昼=ほぼ白のクリーム→夕=オレンジ
+  var HOUR_COLOR_STOPS = [
+    [4, '#FF97A6'], [7, '#FFB37E'], [9, '#FFDDA6'],
+    [12, '#FFF6E6'], [15, '#FFDDA0'], [18, '#FF9F5E'], [20, '#F2724A']
+  ];
+  function hourColorAt(h){
+    var s = HOUR_COLOR_STOPS;
+    if (h <= s[0][0]) return s[0][1];
+    if (h >= s[s.length - 1][0]) return s[s.length - 1][1];
+    for (var i = 0; i < s.length - 1; i++){
+      if (h >= s[i][0] && h <= s[i + 1][0]) return hexLerp(s[i][1], s[i + 1][1], (h - s[i][0]) / (s[i + 1][0] - s[i][0]));
+    }
+    return s[s.length - 1][1];
+  }
+  // 弧上の位置（0=日の出側 〜 1=日の入側）→暖色。軌跡線のグラデーション用
+  var FRAC_COLOR_STOPS = [[0, '#FF97A6'], [.2, '#FFB37E'], [.5, '#FFF6E6'], [.8, '#FFBE7F'], [1, '#F2724A']];
+  function gradientColorAt(frac){
+    var s = FRAC_COLOR_STOPS;
+    if (frac <= 0) return s[0][1];
+    if (frac >= 1) return s[s.length - 1][1];
+    for (var i = 0; i < s.length - 1; i++){
+      if (frac >= s[i][0] && frac <= s[i + 1][0]) return hexLerp(s[i][1], s[i + 1][1], (frac - s[i][0]) / (s[i + 1][0] - s[i][0]));
+    }
+    return s[s.length - 1][1];
+  }
+  // 太陽アイコン（現在位置。光条付き。地図・ARで共通利用）
+  function sunIconSvg(size){
+    var r = size / 2;
+    return '<svg width="' + size + '" height="' + size + '" viewBox="' + (-r) + ' ' + (-r) + ' ' + size + ' ' + size + '" style="overflow:visible">' +
+      '<circle r="' + (r * 0.58) + '" fill="rgba(4,10,7,.45)" style="filter:blur(1.5px)"/>' +
+      '<g stroke="#4ADE80" stroke-width="1.8" stroke-linecap="round" opacity=".9">' +
+        '<line x1="0" y1="-' + (r*.62) + '" x2="0" y2="-' + (r*1) + '"/>' +
+        '<line x1="' + (r*.44) + '" y1="-' + (r*.44) + '" x2="' + (r*.71) + '" y2="-' + (r*.71) + '"/>' +
+        '<line x1="' + (r*.62) + '" y1="0" x2="' + (r*1) + '" y2="0"/>' +
+        '<line x1="' + (r*.44) + '" y1="' + (r*.44) + '" x2="' + (r*.71) + '" y2="' + (r*.71) + '"/>' +
+        '<line x1="0" y1="' + (r*.62) + '" x2="0" y2="' + (r*1) + '"/>' +
+        '<line x1="-' + (r*.44) + '" y1="' + (r*.44) + '" x2="-' + (r*.71) + '" y2="' + (r*.71) + '"/>' +
+        '<line x1="-' + (r*.62) + '" y1="0" x2="-' + (r*1) + '" y2="0"/>' +
+        '<line x1="-' + (r*.44) + '" y1="-' + (r*.44) + '" x2="-' + (r*.71) + '" y2="-' + (r*.71) + '"/>' +
+      '</g>' +
+      '<circle r="' + (r * 0.5) + '" fill="rgba(74,222,128,.35)" style="filter:blur(2px)"/>' +
+      '<circle r="' + (r * 0.32) + '" fill="#6CFFA0" stroke="rgba(6,20,12,.75)" stroke-width="1.5"/>' +
+    '</svg>';
+  }
 
   // ---------- 太陽計算ユーティリティ ----------
   function sunAt(d){
@@ -545,31 +698,48 @@
   }
 
   // 今日の軌跡：グロー付きの太陽の円が弧に沿って日の出側→日の入側へ滑らかに移動し、
-  // 後ろに線が引かれ、通過した時刻マーカーがトレイルとして残る（動画と同じ動き）。
-  function makeTodayDrawer(color){
+  // 後ろに暖色グラデーションの線が引かれ、通過した時刻マーカー（時間帯ごとの暖色アイコン）がトレイルとして残る。
+  var TODAY_LINE_SEGMENTS = 14; // 線を細かく分割し、区間ごとに暖色を変えて疑似グラデーションにする
+  function makeTodayDrawer(){
     return function(group, arc){
       var animating = !document.hidden;            // 表示中のみ移動アニメ（非表示は即時最終状態）
-      var poly = L.polyline([], { color: color, weight: 2.5, opacity: 0.95 }).addTo(group);
+      var total = arc.pts.length;
+      var segs = [];
+      for (var i = 0; i < TODAY_LINE_SEGMENTS; i++){
+        segs.push(L.polyline([], {
+          color: gradientColorAt((i + 0.5) / TODAY_LINE_SEGMENTS), weight: 1.8, opacity: 0.95, lineCap: 'round'
+        }).addTo(group));
+      }
+      function setSegs(n){
+        for (var i = 0; i < TODAY_LINE_SEGMENTS; i++){
+          var lo = Math.floor(total * i / TODAY_LINE_SEGMENTS), hi = Math.ceil(total * (i + 1) / TODAY_LINE_SEGMENTS);
+          var from = Math.max(0, Math.min(lo, n)), to = Math.max(0, Math.min(hi, n));
+          // 隣接区間と繋がるよう1点分重ねる
+          segs[i].setLatLngs(to > from ? arc.pts.slice(Math.max(0, from - (i > 0 ? 1 : 0)), to) : []);
+        }
+      }
       var added = 0;
       var head = animating ? L.marker(arc.pts[0], { interactive: false, zIndexOffset: 1000,
-        icon: travelIcon(color) }).addTo(group) : null;
+        icon: travelIcon('#FFB020') }).addTo(group) : null;
       function placeMarkers(n){
         while (added < arc.markers.length && arc.markers[added].idx < n){
           var mk = arc.markers[added++];
+          var col = hourColorAt(mk.hour);
           var m = L.marker(mk.latlng, { interactive: false,
-            icon: L.divIcon({ className:'', html:'<div class="hour-dot">'+mk.hour+'</div>', iconSize:[24,24], iconAnchor:[12,12] }) }).addTo(group);
+            icon: L.divIcon({ className:'', html:'<div class="hour-dot" style="background:'+col+'">'+mk.hour+'</div>', iconSize:[24,24], iconAnchor:[12,12] }) }).addTo(group);
           if (animating){
             var root = m.getElement(); var el = root && root.querySelector('.hour-dot');
             if (el){
-              el.style.opacity = '0'; el.style.transition = 'opacity .3s ease';
-              (function(e){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ e.style.opacity = '1'; }); }); })(el);
+              el.style.opacity = '0'; el.style.transform = 'scale(.5)';
+              el.style.transition = 'opacity .3s ease, transform .35s cubic-bezier(.2,.8,.2,1.2)';
+              (function(e){ requestAnimationFrame(function(){ requestAnimationFrame(function(){ e.style.opacity = '1'; e.style.transform = 'scale(1)'; }); }); })(el);
             }
           }
         }
       }
       return { set: function(t){
-        var n = Math.max(2, Math.round(arc.pts.length * t));
-        poly.setLatLngs(arc.pts.slice(0, n));      // 線が移動ヘッドの後ろに引かれる
+        var n = Math.max(2, Math.round(total * t));
+        setSegs(n);                                // 線が移動ヘッドの後ろに引かれる（暖色グラデーション）
         if (head) head.setLatLng(arc.pts[n - 1]);  // 太陽の円が弧に沿って移動
         placeMarkers(n);                            // 通過した時刻マーカーをトレイルとして残す
         if (t >= 1 && head){                        // 到達したら移動ヘッドはフェードアウトして消す
@@ -586,8 +756,8 @@
   function makeDashedDrawer(color){
     return function(group, arc){
       var animating = !document.hidden;
-      var casing = L.polyline([], { color: '#0b0c0f', weight: 5.5, opacity: 0.55, dashArray: '6 8' }).addTo(group);
-      var line   = L.polyline([], { color: color, weight: 2.5, opacity: 1, dashArray: '6 8' }).addTo(group);
+      var casing = L.polyline([], { color: '#0b0c0f', weight: 5.5, opacity: 0.55, dashArray: '2.5 5' }).addTo(group);
+      var line   = L.polyline([], { color: color, weight: 2.4, opacity: 1, dashArray: '2.5 5' }).addTo(group);
       var head = animating ? L.marker(arc.pts[0], { interactive: false, zIndexOffset: 1000, icon: travelIcon(color) }).addTo(group) : null;
       return { set: function(t){
         var n = Math.max(2, Math.round(arc.pts.length * t));
@@ -603,22 +773,31 @@
     };
   }
 
-  // 現在の太陽（方位線＋緑マーカー）— 選択日に関係なく「実際の今」を表示
+  // 現在の太陽（方位線＋太陽アイコン）— 選択日に関係なく「実際の今」を表示。
+  // 方位線はグリーンのグラデーション（観測点側は深緑→太陽アイコン側は明るい緑）。
+  var NOW_LINE_SEGMENTS = 8;
+  var NOW_LINE_STOPS = ['#1F8A56', '#4ADE80'];
   function drawNow(){
     groups.now.clearLayers();
     var now = new Date();
     var s = sunAt(now);
     if (s.altitude > -0.6){
-      L.polyline([[state.obs.lat, state.obs.lng], dest(s.azimuth, RADIUS * 1.3)],
-        { color: '#FF7A1A', weight: 2, opacity: 0.9 }).addTo(groups.now);
+      var from = [state.obs.lat, state.obs.lng];
+      var to = dest(s.azimuth, RADIUS * 1.3);
+      for (var i = 0; i < NOW_LINE_SEGMENTS; i++){
+        var t0 = i / NOW_LINE_SEGMENTS, t1 = (i + 1) / NOW_LINE_SEGMENTS;
+        var p0 = [from[0] + (to[0]-from[0])*t0, from[1] + (to[1]-from[1])*t0];
+        var p1 = [from[0] + (to[0]-from[0])*t1, from[1] + (to[1]-from[1])*t1];
+        L.polyline([p0, p1], { color: hexLerp(NOW_LINE_STOPS[0], NOW_LINE_STOPS[1], (t0+t1)/2), weight: 2, opacity: 0.9, lineCap: 'round' }).addTo(groups.now);
+      }
       L.marker(sunLatLng(s), {
         interactive: false,
-        icon: L.divIcon({ className:'', html:'<div class="now-dot"></div>', iconSize:[15,15], iconAnchor:[8,8] })
+        icon: L.divIcon({ className:'now-sun', html: sunIconSvg(26), iconSize:[26,26], iconAnchor:[13,13] })
       }).addTo(groups.now);
       document.getElementById('vNow').innerHTML =
-        Math.round(s.azimuth) + '°<small> / 高度' + Math.round(s.altitude) + '°</small>';
+        '方位 ' + Math.round(s.azimuth) + '° ／ 高度 ' + Math.round(s.altitude) + '°';
     } else {
-      document.getElementById('vNow').innerHTML = '地平線下';
+      document.getElementById('vNow').innerHTML = '太陽は地平線下';
     }
   }
 
@@ -626,7 +805,7 @@
   // k のグループだけを描き直す。他のグループには一切触れない（再アニメさせない）。
   function drawGroup(k){
     if (k === 'today'){
-      if (state.show.today)  animateArc(groups.today,  buildArc(state.date),             ANIM_DUR, makeTodayDrawer('#FFB020'));  else groups.today.clearLayers();
+      if (state.show.today)  animateArc(groups.today,  buildArc(state.date),             ANIM_DUR, makeTodayDrawer());  else groups.today.clearLayers();
     } else if (k === 'summer'){
       if (state.show.summer) animateArc(groups.summer, buildArc(solsticeDate('summer')), ANIM_DUR, makeDashedDrawer('#FF6B6B')); else groups.summer.clearLayers();
     } else if (k === 'winter'){
@@ -634,10 +813,99 @@
     }
   }
 
+  // ---------- タイムコード（現在時刻・太陽の状態テキスト） ----------
+  function updateClock(){
+    document.getElementById('tcNum').textContent = fmtTime(new Date());
+    var now = new Date();
+    var nt = SunCalc.getTimes(now, state.obs.lat, state.obs.lng);
+    var text;
+    if (!nt.sunrise || isNaN(nt.sunrise.getTime())){ text = '—'; }
+    else if (now < nt.dawn){ text = '夜明け前'; }
+    else if (now < nt.sunrise){ text = 'まもなく日の出'; }
+    else if (now < nt.goldenHourEnd){ text = '朝のマジックアワー'; }
+    else if (now < nt.goldenHour){ text = '日中・順光'; }
+    else if (now < nt.sunset){ text = '夕方のマジックアワー'; }
+    else if (now < nt.dusk){ text = '日没後・薄明'; }
+    else { text = '夜'; }
+    document.getElementById('tcStatus').textContent = text;
+  }
+
+  // ---------- 下部バー（24hタイムライン）：位置計算＋スキャン演出 ----------
+  function pctOfDay(d){ return (d.getHours() * 60 + d.getMinutes()) / 1440 * 100; }
+
+  var BAND_ANIM_DUR = 700;
+  var bandAnimId = 0;
+  function animateBandScan(targetPct, revealEls, playhead, showPlayheadAtEnd){
+    bandAnimId++;
+    var myAnim = bandAnimId;
+    var scan = document.getElementById('deckScan');
+    revealEls.forEach(function(el){ el.style.transition = 'none'; el.style.opacity = '0'; });
+    playhead.style.transition = 'none'; playhead.style.opacity = '0'; playhead.style.transform = 'translateX(-50%) scaleY(.3)';
+    scan.style.transition = 'none'; scan.style.opacity = '1'; scan.style.left = '0%';
+    if (document.hidden){                 // 非表示タブでは即座に最終状態
+      revealEls.forEach(function(el){ el.style.opacity = '1'; });
+      scan.style.opacity = '0';
+      if (showPlayheadAtEnd){ playhead.style.opacity = '1'; playhead.style.transform = 'translateX(-50%) scaleY(1)'; }
+      return;
+    }
+    var pulsed = [];
+    var start = null;
+    function step(ts){
+      if (bandAnimId !== myAnim) return;      // 後発のredrawに置き換えられたら停止
+      if (start === null) start = ts;
+      var raw = Math.min(1, (ts - start) / BAND_ANIM_DUR);
+      var t = 1 - Math.pow(1 - raw, 3);
+      var pos = targetPct * t;
+      scan.style.left = pos + '%';
+      revealEls.forEach(function(el, idx){
+        var elPct = parseFloat(el.style.left) || 0;
+        if (!pulsed[idx] && pos >= elPct){ pulsed[idx] = true; el.style.transition = 'opacity .25s ease'; el.style.opacity = '1'; }
+      });
+      if (raw < 1) requestAnimationFrame(step);
+      else {
+        scan.style.transition = 'opacity .25s ease'; scan.style.opacity = '0';
+        if (showPlayheadAtEnd){
+          // 「コツン」は縦方向(scaleY)のみで動かし、横位置には触れないためズレが起きない
+          playhead.style.transition = 'opacity .2s ease, transform .3s cubic-bezier(.34,1.56,.64,1)';
+          playhead.style.opacity = '1'; playhead.style.transform = 'translateX(-50%) scaleY(1.5)';
+          setTimeout(function(){
+            playhead.style.transition = 'transform .25s ease-out';
+            playhead.style.transform = 'translateX(-50%) scaleY(1)';
+          }, 260);
+        }
+      }
+    }
+    requestAnimationFrame(step);
+  }
+
+  function updateBand(t, animate){
+    var isToday = state.date.toDateString() === new Date().toDateString();
+    var pctSR = pctOfDay(t.sunrise), pctGE = pctOfDay(t.goldenHourEnd);
+    var pctGH = pctOfDay(t.goldenHour), pctSS = pctOfDay(t.sunset);
+    var pctNN = pctOfDay(t.solarNoon);
+    var segAM = document.getElementById('segAM'), segPM = document.getElementById('segPM');
+    var markSR = document.getElementById('markSR'), markNN = document.getElementById('markNN'), markSS = document.getElementById('markSS');
+    var ph = document.getElementById('deckPlayhead');
+    segAM.style.left = pctSR + '%'; segAM.style.width = Math.max(0, pctGE - pctSR) + '%';
+    segPM.style.left = pctGH + '%'; segPM.style.width = Math.max(0, pctSS - pctGH) + '%';
+    markSR.style.left = pctSR + '%'; markNN.style.left = pctNN + '%'; markSS.style.left = pctSS + '%';
+    var pctNow = isToday ? pctOfDay(new Date()) : null;
+    if (pctNow !== null) ph.style.left = pctNow + '%';
+
+    if (animate){
+      animateBandScan(isToday ? pctNow : 100, [segAM, segPM, markSR, markNN, markSS], ph, isToday);
+    } else if (isToday){
+      ph.style.transition = 'none'; ph.style.opacity = '1'; ph.style.transform = 'translateX(-50%) scaleY(1)';
+    } else {
+      ph.style.transition = 'none'; ph.style.opacity = '0';
+    }
+  }
+
   // ---------- 全体更新（日付・観測点の変更時：表示中の軌跡をすべて描き直す） ----------
   function redraw(){
     drawGroup('today'); drawGroup('summer'); drawGroup('winter');
     drawNow();
+    updateClock();
 
     var t = SunCalc.getTimes(dateAtNoon(state.date), state.obs.lat, state.obs.lng);
     document.getElementById('vSunrise').textContent = fmtTime(t.sunrise);
@@ -646,6 +914,8 @@
     // マジックアワー: 朝=日の出〜GH終了 / 夕=GH開始〜日の入
     document.getElementById('vGHam').textContent = fmtRange(t.sunrise, t.goldenHourEnd);
     document.getElementById('vGHpm').textContent = fmtRange(t.goldenHour, t.sunset);
+
+    updateBand(t, true);   // 24hバー：位置更新＋スキャン演出
   }
 
   function setObserver(lat, lng, pan){
@@ -698,11 +968,11 @@
   document.getElementById('todayBtn').addEventListener('click', function(){ setDate(new Date()); });
 
   var layerBtn = document.getElementById('layerBtn');
-  layerBtn.textContent = state.satellite ? '地図' : '航空写真';
+  layerBtn.setAttribute('aria-label', state.satellite ? '地図に切り替え' : '航空写真に切り替え');
   layerBtn.addEventListener('click', function(){
     state.satellite = !state.satellite;
-    if (state.satellite){ map.removeLayer(osmLayer); satLayer.addTo(map); this.textContent = '地図'; }
-    else { map.removeLayer(satLayer); osmLayer.addTo(map); this.textContent = '航空写真'; }
+    if (state.satellite){ map.removeLayer(osmLayer); satLayer.addTo(map); this.setAttribute('aria-label', '地図に切り替え'); }
+    else { map.removeLayer(satLayer); osmLayer.addTo(map); this.setAttribute('aria-label', '航空写真に切り替え'); }
     save();
   });
 
@@ -1004,7 +1274,7 @@
       };
     }
 
-    // 選択日の軌跡線（5分刻み）
+    // 選択日の軌跡線（5分刻み）。地図と同じ暖色グラデーション（朝=ピンク→昼=クリーム→夕=オレンジ）
     arCtx.beginPath();
     var pen = false;
     for (var m = 0; m < 1440; m += 5){
@@ -1015,20 +1285,23 @@
       if (!p.on){ pen = false; continue; }
       if (pen) arCtx.lineTo(p.x, p.y); else { arCtx.moveTo(p.x, p.y); pen = true; }
     }
-    arCtx.strokeStyle = 'rgba(255,176,32,.7)';
+    var lineGrad = arCtx.createLinearGradient(0, 0, w, 0);
+    FRAC_COLOR_STOPS.forEach(function(st){ lineGrad.addColorStop(st[0], st[1]); });
+    arCtx.strokeStyle = lineGrad;
     arCtx.lineWidth = 2;
     arCtx.stroke();
 
-    // 30分刻みの時刻マーカー
+    // 30分刻みの時刻マーカー。地図の時刻アイコンと同じく時間帯ごとの暖色
     for (var mm = 0; mm < 1440; mm += 30){
       var md = new Date(state.date); md.setHours(0, mm, 0, 0);
       var ms = sunAt(md);
       if (ms.altitude <= 0) continue;
       var mp = project(ms.azimuth, ms.altitude);
       if (!mp.on) continue;
+      var mcol = hourColorAt(md.getHours() + md.getMinutes() / 60);
       arCtx.beginPath();
       arCtx.arc(mp.x, mp.y, 5.5, 0, Math.PI * 2);
-      arCtx.fillStyle = '#FFB020';
+      arCtx.fillStyle = mcol;
       arCtx.fill();
       arCtx.lineWidth = 1.5;
       arCtx.strokeStyle = 'rgba(255,255,255,.9)';
@@ -1036,7 +1309,7 @@
       arLabel(mp.x, mp.y, ('0'+md.getHours()).slice(-2) + ':' + ('0'+md.getMinutes()).slice(-2));
     }
 
-    // 現在の太陽（実際の今）
+    // 現在の太陽（実際の今）。地図の太陽アイコンと同じく光条付き
     var now = new Date();
     var ns = sunAt(now);
     if (ns.altitude > -1){
@@ -1047,10 +1320,18 @@
         g.addColorStop(1, 'rgba(74,222,128,0)');
         arCtx.fillStyle = g;
         arCtx.beginPath(); arCtx.arc(np.x, np.y, 30, 0, Math.PI * 2); arCtx.fill();
+        arCtx.strokeStyle = 'rgba(74,222,128,.9)'; arCtx.lineWidth = 1.8; arCtx.lineCap = 'round';
+        for (var ray = 0; ray < 8; ray++){
+          var ra = ray * Math.PI / 4;
+          arCtx.beginPath();
+          arCtx.moveTo(np.x + Math.cos(ra) * 12, np.y + Math.sin(ra) * 12);
+          arCtx.lineTo(np.x + Math.cos(ra) * 18, np.y + Math.sin(ra) * 18);
+          arCtx.stroke();
+        }
         arCtx.beginPath(); arCtx.arc(np.x, np.y, 9, 0, Math.PI * 2);
-        arCtx.fillStyle = '#4ADE80'; arCtx.fill();
+        arCtx.fillStyle = '#6CFFA0'; arCtx.fill();
         arCtx.lineWidth = 2.5; arCtx.strokeStyle = '#fff'; arCtx.stroke();
-        arLabel(np.x, np.y - 14, '現在 ' + fmtTime(now), '#4ADE80');
+        arLabel(np.x, np.y - 22, '現在 ' + fmtTime(now), '#4ADE80');
       }
     }
 
@@ -1154,7 +1435,13 @@
 
   // ---------- 起動 ----------
   setDate(new Date());
-  setInterval(drawNow, 60000); // 現在の太陽は毎分更新
+  setInterval(function(){    // 現在の太陽・タイムコード・バーのプレイヘッド位置を毎分更新（再アニメはしない）
+    drawNow();
+    updateClock();
+    if (state.date.toDateString() === new Date().toDateString()){
+      document.getElementById('deckPlayhead').style.left = pctOfDay(new Date()) + '%';
+    }
+  }, 60000);
 
   // 起動時に現在地を取得して中心に置く（許可された場合）。拒否・取得失敗時は既定/保存位置のまま。
   geoGetCurrent(
