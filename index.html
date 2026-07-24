@@ -342,6 +342,21 @@
     font-variant-numeric:tabular-nums; white-space:nowrap;
   }
 
+  /* 横向きで開いたときの案内（軌跡の見積もりが縦持ち前提のため、正確な位置合わせができない） */
+  .ar-rotate{
+    position:absolute; inset:0; z-index:1;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px;
+    background:rgba(8,9,12,.82); backdrop-filter:blur(6px); -webkit-backdrop-filter:blur(6px);
+    color:var(--text); pointer-events:none;
+  }
+  .ar-rotate[hidden]{ display:none; }  /* display:flex が hidden属性を打ち消さないように */
+  .ar-rotate svg{ width:40px; height:40px; opacity:.7; animation:ar-rotate-hint 1.8s ease-in-out infinite; }
+  .ar-rotate p{ margin:0; font-size:14px; color:var(--sub); }
+  @keyframes ar-rotate-hint{
+    0%, 100%{ transform:rotate(0deg); }
+    50%{ transform:rotate(-90deg); }
+  }
+
   .leaflet-control-attribution{ background:rgba(17,18,22,.6) !important; color:#777 !important; }
   .leaflet-control-attribution a{ color:#999 !important; }
 
@@ -493,6 +508,13 @@
     </svg>
   </button>
   <div class="ar-status" id="arStatus">コンパス待機中…</div>
+  <div class="ar-rotate" id="arRotateNotice" hidden>
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="7" y="2" width="10" height="20" rx="2"/>
+      <line x1="12" y1="18" x2="12" y2="18"/>
+    </svg>
+    <p>縦向きでご利用ください</p>
+  </div>
 </div>
 
 <script src="vendor/leaflet/leaflet.js"></script>
@@ -1175,6 +1197,7 @@
   var arVideo = document.getElementById('arVideo');
   var arCanvas = document.getElementById('arCanvas');
   var arStatus = document.getElementById('arStatus');
+  var arRotateNotice = document.getElementById('arRotateNotice');
   var arCtx = arCanvas.getContext('2d');
   var arStream = null, arActive = false, hasAbsolute = false;
   var orient = { heading: null, pitch: null };
@@ -1246,8 +1269,8 @@
 
   function resizeAR(){
     var dpr = window.devicePixelRatio || 1;
-    arCanvas.width = arView.clientWidth * dpr;
-    arCanvas.height = arView.clientHeight * dpr;
+    arCanvas.width = Math.round(arView.clientWidth * dpr);
+    arCanvas.height = Math.round(arView.clientHeight * dpr);
     arCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
   }
 
@@ -1275,7 +1298,24 @@
 
   function drawAR(){
     var w = arView.clientWidth, h = arView.clientHeight;
+
+    // 画面回転などでCSS上のサイズとキャンバスの内部解像度がずれると、古い描画が消えずに
+    // 残ったまま重なって見える。resize/orientationchangeイベントに頼らず、毎フレーム
+    // 実サイズと突き合わせて必要なら描き直す（＝イベントの取りこぼしに強くする）。
+    var dpr = window.devicePixelRatio || 1;
+    if (arCanvas.width !== Math.round(w * dpr) || arCanvas.height !== Math.round(h * dpr)){
+      resizeAR();
+    }
     arCtx.clearRect(0, 0, w, h);
+
+    // 軌跡の投影は縦持ち（ポートレート）のカメラ視野角を前提にした近似のため、
+    // 横向きのままでは太陽の位置が正しく合わない。横向き中は描画せず案内だけ出す。
+    if (w > h){
+      arRotateNotice.hidden = false;
+      arStatus.textContent = '';
+      return;
+    }
+    arRotateNotice.hidden = true;
 
     if (orient.heading === null){
       arStatus.textContent = 'コンパス待機中…（端末を8の字に動かすと改善します）';
